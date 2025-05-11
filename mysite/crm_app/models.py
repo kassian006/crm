@@ -49,7 +49,7 @@ class Reception(UserProfile):
 
 class Doctor(UserProfile):
     speciality = models.ForeignKey(Speciality, on_delete=models.CASCADE, related_name='speciality_doctor')
-    department = models.ForeignKey(Department, on_delete=models.CASCADE)
+    department = models.ForeignKey(Department, on_delete=models.CASCADE, related_name='department_doctor')
     image = models.ImageField(upload_to='doctor_image/', null=True, blank=True)
     medical_linense = models.CharField(max_length=50)
     bonus = models.CharField(max_length=27, null=True, blank=True)
@@ -68,16 +68,15 @@ class DoctorServices(models.Model):
 
 
 class Patient(models.Model):
-    user = models.ForeignKey(UserProfile, on_delete=models.CASCADE)
     phone_number = PhoneNumberField(null=True, blank=True)
-    doctor_service = models.ForeignKey(DoctorServices, on_delete=models.CASCADE)
+    doctor_service = models.ForeignKey(DoctorServices, on_delete=models.CASCADE, related_name='service_doctor')
     birthday = models.DateField()
-    department = models.ForeignKey(Department, on_delete=models.CASCADE)
-    reception = models.ForeignKey(Reception, on_delete=models.CASCADE)
+    department = models.ForeignKey(Department, on_delete=models.CASCADE, related_name='department_patient')
+    reception = models.ForeignKey(Reception, on_delete=models.CASCADE, related_name='reception_patient')
     started_time = models.TimeField()
     end_time = models.TimeField()
     gender_patient = models.CharField(max_length=32, choices=GENDER_CHOICES)
-    doctor = models.ForeignKey(Doctor, on_delete=models.CASCADE)
+    doctor = models.ForeignKey(Doctor, on_delete=models.CASCADE, related_name='doctor_patient')
     STATUS_CHOICES = (
         ('Живая очередь', 'Живая очередь'),
         ('Предзапись', 'Предзапись'),
@@ -89,7 +88,7 @@ class Patient(models.Model):
 
 class CustomerRecord(models.Model):
     reception = models.ForeignKey(Reception, related_name='reception_customer', on_delete=models.CASCADE)
-    patient = models.ForeignKey(Patient, on_delete=models.CASCADE)
+    patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name='patient_customer')
     doctor = models.ForeignKey(Doctor, related_name='doctor_customer', on_delete=models.CASCADE)
     service = models.ForeignKey(DoctorServices, on_delete=models.SET_NULL, null=True)
     department = models.ForeignKey(Department, on_delete=models.SET_NULL, null=True)
@@ -122,7 +121,7 @@ class HistoryRecord(models.Model):
         ('в ожидании', 'в ожидании'),
         ('отменен', 'отменен'),
     )
-    record = models.CharField(max_length=10, choices=CHOICES_RECORD, default='в ожидании')
+    record = models.CharField(max_length=32, choices=CHOICES_RECORD, default='в ожидании')
     payment = models.ForeignKey(CustomerRecord, related_name='payment_history', on_delete=models.CASCADE)
     description = models.TextField()
 
@@ -135,8 +134,8 @@ class PriceList(models.Model):
 
 class Analytics(models.Model):
     date = models.DateField(auto_now_add=True)
-    patient = models.ForeignKey(Patient, on_delete=models.SET_NULL)
-    service = models.ForeignKey(DoctorServices, on_delete=models.SET_NULL)
+    patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name='patient_analytics')
+    service = models.ForeignKey(DoctorServices, on_delete=models.CASCADE, related_name='service_analytics')
 
 
 
