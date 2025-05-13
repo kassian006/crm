@@ -2,7 +2,7 @@ from django.urls import path, include
 from rest_framework.routers import SimpleRouter, DefaultRouter
 from .views import *
 
-router = DefaultRouter()
+router = SimpleRouter()
 router.register(r'user_profile', UserProfileViewSet, basename='user_profile')
 router.register(r'department', DepartmentViewSet, basename='department')
 router.register(r'speciality', SpecialityViewSet, basename='speciality')
@@ -17,4 +17,9 @@ router.register(r'analytic', AnalyticsViewSet, basename='analytic')
 
 urlpatterns = [
     path('', include(router.urls)),
+    path('register/doctor/', DoctorRegisterView.as_view(), name='register-doctor'),
+    path('register/reception/', ReceptionRegisterView.as_view(), name='register-reception'),
+    path('login/', CustomLoginView.as_view(), name='login'),
+    path('login/admin/', CustomAdminLoginView.as_view(), name='admin-login'),
+    path('logout/', LogoutView.as_view(), name='logout'),
 ]
