@@ -53,8 +53,8 @@ class EmailLoginCode(models.Model):
 class UserProfile(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(unique=True)
     phone_number = PhoneNumberField(region='KG')
-    first_name = models.CharField(max_length=60, blank=True)
-    last_name = models.CharField(max_length=60, blank=True)
+    first_name = models.CharField(max_length=60)
+    last_name = models.CharField(max_length=60)
     age = models.PositiveSmallIntegerField(validators=[MinValueValidator(1), MaxValueValidator(140)],
                                            null=True, blank=True)
     profile_picture = models.ImageField(upload_to='profile_images/')
@@ -106,8 +106,19 @@ class Doctor(UserProfile):
     class Meta:
         verbose_name = 'Doctor'
 
+
+# class Service(models.Model):
+#     name = models.CharField(max_length=64)
+#     department = models.ForeignKey(Department, on_delete=models.CASCADE, related_name="service_services")
+#     price = models.PositiveIntegerField(default=0)
+#
+#     def __str__(self):
+#         return self.name
+
+
 class DoctorServices(models.Model):
-    doctor_service = models.CharField(max_length=50)
+    # doctor_service = models.ForeignKey(Service, on_delete=models.CASCADE, related_name='service_doctor')
+    doctor_service = models.CharField(max_length=32)
     department = models.ForeignKey(Department, on_delete=models.CASCADE, related_name="services")
     price = models.PositiveIntegerField(default=0)
     discount = models.DecimalField(max_digits=5, decimal_places=2, default=0.0)
@@ -138,6 +149,13 @@ class Patient(models.Model):
 
     def __str__(self):
         return f'{self.full_name}, {self.status_patient}'
+
+    def get_count_record(self):
+        record = self.speciality_reception.all()
+        if record.exists():
+            return record.count()
+        return 0
+
 
 class CustomerRecord(models.Model):
     reception = models.ForeignKey(Reception, related_name='reception_customer', on_delete=models.CASCADE)

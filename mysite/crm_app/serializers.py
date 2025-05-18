@@ -122,10 +122,11 @@ class LogoutSerializer(serializers.Serializer):
 
 
 
-class DepartmentSerializer(serializers.ModelSerializer):
+class \
+        DepartmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Department
-        fields = '__all__'
+        fields = ['department_name']
 
 
 class SpecialitySerializer(serializers.ModelSerializer):
@@ -140,34 +141,113 @@ class ReceptionSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class NameReceptionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Reception
+        fields = ['first_name', 'last_name']
+
+
 class DoctorSerializer(serializers.ModelSerializer):
     class Meta:
         model = Doctor
         fields = '__all__'
 
 
-class DoctorServicesSerializer(serializers.ModelSerializer):
+class NameDoctorSerializer(serializers.ModelSerializer):
     class Meta:
-        model = DoctorServices
-        fields = '__all__'
+        model = Doctor
+        fields = ['first_name', 'last_name']
 
 
-class PatientSerializer(serializers.ModelSerializer):
+class HistoryRecordInfoPatSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Patient
-        fields = '__all__'
-
-
-class CustomerRecordSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = CustomerRecord
-        fields = '__all__'
+        model = HistoryRecord
+        fields = ['record']
 
 
 class HistoryRecordSerializer(serializers.ModelSerializer):
     class Meta:
         model = HistoryRecord
         fields = '__all__'
+
+
+# class ServiceSerializer(serializers.ModelSerializer):
+#     service_services = DepartmentSerializer()
+#     class Meta:
+#         model = Service
+#         fields = '__all__'
+
+
+class MakeDoctorServicesSerializer(serializers.ModelSerializer):
+    services = DepartmentSerializer()
+    class Meta:
+        model = DoctorServices
+        fields = ['doctor_service', 'price', 'services']
+
+
+class Make1DoctorServicesSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DoctorServices
+        fields = ['doctor_service']
+
+
+class MakeAppointmentInfoPatientSerializer(serializers.ModelSerializer):
+    reception_patient = NameReceptionSerializer()
+    doctor_patient = NameDoctorSerializer()
+    department_patient = DepartmentSerializer()
+    services = MakeDoctorServicesSerializer()
+    class Meta:
+        model = Patient
+        fields = ['full_name', 'reception_patient', 'doctor_patient', 'started_time', 'end_time', 'status_patient', 'department_patient', 'services']
+
+
+class HistoryRecordInfoPatientSerializer(serializers.ModelSerializer):
+    reception_patient = NameReceptionSerializer()
+    doctor_patient = NameDoctorSerializer()
+    department_patient = DepartmentSerializer()
+    services = Make1DoctorServicesSerializer()
+    record = HistoryRecordInfoPatSerializer()
+    count_record = serializers.SerializerMethodField()
+    class Meta:
+        model = Patient
+        fields = ['full_name', 'reception_patient', 'doctor_patient', 'created_date', 'department_patient', 'services', 'record', 'count_record']
+
+    def get_count_record(self, obj):
+            return obj.get_count_record()
+
+
+class HistoryReceptionInfoPatientSerializer(serializers.ModelSerializer):
+    reception_patient = NameReceptionSerializer()
+    doctor_patient = NameDoctorSerializer()
+    department_patient = DepartmentSerializer()
+    services = Make1DoctorServicesSerializer()
+    record = HistoryRecordInfoPatSerializer()
+    class Meta:
+        model = Patient
+        fields = ['full_name', 'reception_patient', 'doctor_patient', 'created_date', 'department_patient', 'services', 'record']
+
+
+class CustomerRecordSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomerRecord
+        fields = ['payment_type']
+
+
+class PaymentInfoPatientSerializer(serializers.ModelSerializer):
+    doctor_patient = NameDoctorSerializer()
+    department_patient = DepartmentSerializer()
+    services = Make1DoctorServicesSerializer()
+    patient_customer = CustomerRecordSerializer()
+    class Meta:
+        model = Patient
+        fields = ['full_name', 'doctor_patient', 'created_date', 'department_patient', 'services', 'patient_customer']
+
+
+class InfoPatientSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Patient
+        fields = ['full_name', 'phone_number', 'gender_patient']
+
 
 
 class PriceListSerializer(serializers.ModelSerializer):
