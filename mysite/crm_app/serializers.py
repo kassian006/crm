@@ -30,7 +30,6 @@ class UserProfileRegisterSerializer(serializers.ModelSerializer):
         }
 
 
-
 class ReceptionRegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
 
@@ -153,15 +152,24 @@ class DoctorServicesSerializer(serializers.ModelSerializer):
 
 
 class PatientSerializer(serializers.ModelSerializer):
+    created_date = serializers.DateTimeField(format="%d %m %Y %H:%M")
     class Meta:
         model = Patient
-        fields = '__all__'
+        fields = ['full_name', 'phone_number', 'doctor_service', 'birthday', 'department', 'reception',
+                  'started_time', 'end_time', 'gender_patient', 'doctor', 'status_patient', 'created_date']
 
 
 class CustomerRecordSerializer(serializers.ModelSerializer):
+    reception_detail = ReceptionSerializer(source='reception', read_only=True)
+    patient_detail = PatientSerializer(source='patient', read_only=True)
+    doctor_detail = DoctorSerializer(source='doctor', read_only=True)
+    service_detail = DoctorServicesSerializer(source='service', read_only=True)
+    department_detail = DepartmentSerializer(source='department', read_only=True)
+
     class Meta:
         model = CustomerRecord
-        fields = '__all__'
+        fields = ['reception_detail', 'patient_detail', 'doctor_detail', 'service_detail', 'department_detail', 'price', 'change',
+                  'payment_type', 'created_date', 'phone_number', 'created_time']
 
 
 class HistoryRecordSerializer(serializers.ModelSerializer):
