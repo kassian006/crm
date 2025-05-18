@@ -191,6 +191,12 @@ class Make1DoctorServicesSerializer(serializers.ModelSerializer):
         fields = ['doctor_service']
 
 
+class Make2DoctorServicesSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DoctorServices
+        fields = ['doctor_service', 'price']
+
+
 class MakeAppointmentInfoPatientSerializer(serializers.ModelSerializer):
     reception_patient = NameReceptionSerializer()
     doctor_patient = NameDoctorSerializer()
@@ -208,12 +214,17 @@ class HistoryRecordInfoPatientSerializer(serializers.ModelSerializer):
     services = Make1DoctorServicesSerializer()
     record = HistoryRecordInfoPatSerializer()
     count_record = serializers.SerializerMethodField()
+    count_record_history = serializers.ModelSerializer()
     class Meta:
         model = Patient
-        fields = ['full_name', 'reception_patient', 'doctor_patient', 'created_date', 'department_patient', 'services', 'record', 'count_record']
+        fields = ['full_name', 'reception_patient', 'doctor_patient', 'created_date', 'department_patient',
+                  'services', 'record', 'count_record', 'count_record', 'count_record_history']
 
     def get_count_record(self, obj):
             return obj.get_count_record()
+
+    def get_count_record_history(self, obj):
+        return obj.get_count_record_history()
 
 
 class HistoryReceptionInfoPatientSerializer(serializers.ModelSerializer):
@@ -222,9 +233,17 @@ class HistoryReceptionInfoPatientSerializer(serializers.ModelSerializer):
     department_patient = DepartmentSerializer()
     services = Make1DoctorServicesSerializer()
     record = HistoryRecordInfoPatSerializer()
+    count_record = serializers.SerializerMethodField()
+    count_record_history = serializers.ModelSerializer()
     class Meta:
         model = Patient
-        fields = ['full_name', 'reception_patient', 'doctor_patient', 'created_date', 'department_patient', 'services', 'record']
+        fields = ['full_name', 'reception_patient', 'doctor_patient', 'created_date', 'department_patient', 'services', 'record', 'count_record', 'count_record_history']
+
+    def get_count_record(self, obj):
+            return obj.get_count_record()
+
+    def get_count_record_history(self, obj):
+        return obj.get_count_record_history()
 
 
 class CustomerRecordSerializer(serializers.ModelSerializer):
@@ -236,7 +255,7 @@ class CustomerRecordSerializer(serializers.ModelSerializer):
 class PaymentInfoPatientSerializer(serializers.ModelSerializer):
     doctor_patient = NameDoctorSerializer()
     department_patient = DepartmentSerializer()
-    services = Make1DoctorServicesSerializer()
+    services = Make2DoctorServicesSerializer()
     patient_customer = CustomerRecordSerializer()
     class Meta:
         model = Patient
