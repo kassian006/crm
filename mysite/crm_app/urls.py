@@ -8,6 +8,7 @@ router.register(r'department', DepartmentViewSet, basename='department')
 router.register(r'speciality', SpecialityViewSet, basename='speciality')
 router.register(r'reception', ReceptionViewSet, basename='reception')
 router.register(r'doctor', DoctorViewSet, basename='doctor')
+router.register(r'doctor_list', DoctorListViewSet, basename='doctor_list')
 router.register(r'doctor_service', DoctorServicesViewSet, basename='doctor_service')
 router.register(r'patient', PatientViewSet, basename='patient')
 router.register(r'customer_record', CustomerRecordViewSet, basename='customer_record')
@@ -22,4 +23,5 @@ urlpatterns = [
     path('login/', CustomLoginView.as_view(), name='login'),
     path('login/admin/', CustomAdminLoginView.as_view(), name='admin-login'),
     path('logout/', LogoutView.as_view(), name='logout'),
+    path('print_check/', CheckRecordListAPIView.as_view(), name='print_check'),
 ]
