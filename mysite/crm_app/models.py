@@ -53,8 +53,8 @@ class EmailLoginCode(models.Model):
 class UserProfile(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(unique=True)
     phone_number = PhoneNumberField(region='KG')
-    first_name = models.CharField(max_length=60, blank=True)
-    last_name = models.CharField(max_length=60, blank=True)
+    first_name = models.CharField(max_length=60)
+    last_name = models.CharField(max_length=60)
     age = models.PositiveSmallIntegerField(validators=[MinValueValidator(1), MaxValueValidator(140)],
                                            null=True, blank=True)
     profile_picture = models.ImageField(upload_to='profile_images/')
@@ -140,6 +140,26 @@ class Patient(models.Model):
 
     def __str__(self):
         return f'{self.full_name}, {self.status_patient}'
+
+    def get_count_record(self):
+        record = self.speciality_reception.all()
+        if record.exists():
+            return record.count()
+        return 0
+
+    def get_count_record_history(self):
+        today = timezone.now().date()
+        total = Patient.objects.filter(created_date=today).count()
+        pred_records = Patient.objects.filter(status_patient='Предзапись', created_date=today).count()
+        live_records = Patient.objects.filter(status_patient='Живая очередь', created_date=today).count()
+        canceled_records = Patient.objects.filter(status_patient='Отмененные', created_date=today).count()
+        return {
+            'total': total,
+            'pred_records': pred_records,
+            'live_records': live_records,
+            'canceled_records': canceled_records
+        }
+
 
 class CustomerRecord(models.Model):
     reception = models.ForeignKey(Reception, related_name='reception_customer', on_delete=models.CASCADE)

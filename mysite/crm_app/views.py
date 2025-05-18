@@ -112,7 +112,7 @@ class DoctorListViewSet(viewsets.ModelViewSet):
 
 class DoctorServicesViewSet(viewsets.ModelViewSet):
     queryset = DoctorServices.objects.all()
-    serializer_class = DoctorServicesSerializer
+    serializer_class = MakeDoctorServicesSerializer
 
 
 class PatientViewSet(viewsets.ModelViewSet):
@@ -120,6 +120,27 @@ class PatientViewSet(viewsets.ModelViewSet):
     serializer_class = PatientSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_class = PatientFilter
+
+
+class MakeAppointmentInfoPatientViewSet(viewsets.ModelViewSet):
+    queryset = Patient.objects.all()
+    serializer_class = MakeAppointmentInfoPatientSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = PatientFilter
+
+
+class HistoryRecordInfoPatientViewSet(viewsets.ModelViewSet):
+    queryset = Patient.objects.all()
+    serializer_class = HistoryRecordInfoPatientSerializer
+
+
+class PaymentInfoPatientViewSet(viewsets.ModelViewSet):
+    queryset = Patient.objects.all()
+    serializer_class = PaymentInfoPatientSerializer
+
+class InfoPatientViewSet(viewsets.ModelViewSet):
+    queryset = Patient.objects.all()
+    serializer_class = InfoPatientSerializer
 
 
 class CustomerRecordViewSet(viewsets.ModelViewSet):
