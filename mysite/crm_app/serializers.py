@@ -263,6 +263,22 @@ class CustomerRecordSerializer(serializers.ModelSerializer):
                   'payment_type', 'created_date', 'phone_number', 'created_time']
 
 
+class PaymentInfoPatientSerializer(serializers.ModelSerializer):
+    doctor_patient = NameDoctorSerializer()
+    department_patient = DepartmentSerializer()
+    services = Make2DoctorServicesSerializer()
+    patient_customer = CustomerRecordSerializer()
+    class Meta:
+        model = Patient
+        fields = ['full_name', 'doctor_patient', 'created_date', 'department_patient', 'services', 'patient_customer']
+
+
+class InfoPatientSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Patient
+        fields = ['full_name', 'phone_number', 'gender_patient']
+
+
 
 class PriceListSerializer(serializers.ModelSerializer):
     class Meta:
@@ -274,3 +290,4 @@ class AnalyticsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Analytics
         fields = '__all__'
+
