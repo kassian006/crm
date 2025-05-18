@@ -92,6 +92,7 @@ class Reception(UserProfile):
     class Meta:
         verbose_name = 'Reception'
 
+
 class Doctor(UserProfile):
     speciality = models.ForeignKey(Speciality, on_delete=models.CASCADE, related_name='speciality_doctor')
     department = models.ForeignKey(Department, on_delete=models.CASCADE, related_name='department_doctor', null=True, blank=True)
@@ -107,19 +108,9 @@ class Doctor(UserProfile):
         verbose_name = 'Doctor'
 
 
-# class Service(models.Model):
-#     name = models.CharField(max_length=64)
-#     department = models.ForeignKey(Department, on_delete=models.CASCADE, related_name="service_services")
-#     price = models.PositiveIntegerField(default=0)
-#
-#     def __str__(self):
-#         return self.name
-
-
 class DoctorServices(models.Model):
-    # doctor_service = models.ForeignKey(Service, on_delete=models.CASCADE, related_name='service_doctor')
-    doctor_service = models.CharField(max_length=32)
-    department = models.ForeignKey(Department, on_delete=models.CASCADE, related_name="services")
+    doctor_service = models.CharField(max_length=256)
+    department = models.ForeignKey(Department, on_delete=models.CASCADE, related_name="department_services")
     price = models.PositiveIntegerField(default=0)
     discount = models.DecimalField(max_digits=5, decimal_places=2, default=0.0)
     salary_doctor = models.PositiveSmallIntegerField()
@@ -145,7 +136,7 @@ class Patient(models.Model):
         ('Отмененные', 'Отмененные')
     )
     status_patient = models.CharField(max_length=32, choices=STATUS_CHOICES)
-    created_date = models.DateField()
+    created_date = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f'{self.full_name}, {self.status_patient}'
@@ -177,15 +168,15 @@ class CustomerRecord(models.Model):
     service = models.ForeignKey(DoctorServices, on_delete=models.SET_NULL, null=True)
     department = models.ForeignKey(Department, on_delete=models.SET_NULL, null=True)
     price = models.PositiveIntegerField(default=0)
-    change = models.PositiveIntegerField()
+    change = models.PositiveIntegerField(null=True, blank=True)
     PAYMENT_CHOICES = (
         ('cash', 'Наличные'),
         ('card', 'Карта'),
     )
     payment_type = models.CharField(max_length=10, choices=PAYMENT_CHOICES, default='cash')
-    date = models.DateTimeField(auto_now_add=True)
+    created_date = models.DateTimeField(auto_now_add=True)
     phone_number = PhoneNumberField(region='KG', null=True, blank=True)
-    time = models.TimeField()  # расширение времени
+    created_time = models.TimeField(auto_now_add=True, )  # расширение времени
     #  инфо о пациенте ушул класс мн берилет
     # сериалайзерге релитетнейм  мн доктордын ичинен запистерди фильтр кылуу
 

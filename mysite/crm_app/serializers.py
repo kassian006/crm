@@ -30,7 +30,6 @@ class UserProfileRegisterSerializer(serializers.ModelSerializer):
         }
 
 
-
 class ReceptionRegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
 
@@ -122,8 +121,7 @@ class LogoutSerializer(serializers.Serializer):
 
 
 
-class \
-        DepartmentSerializer(serializers.ModelSerializer):
+class DepartmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Department
         fields = ['department_name']
@@ -152,6 +150,12 @@ class DoctorSerializer(serializers.ModelSerializer):
         model = Doctor
         fields = '__all__'
 
+class DoctorServicesSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DoctorServices
+        fields = '__all__'
+
+
 
 class NameDoctorSerializer(serializers.ModelSerializer):
     class Meta:
@@ -171,11 +175,11 @@ class HistoryRecordSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-# class ServiceSerializer(serializers.ModelSerializer):
-#     service_services = DepartmentSerializer()
-#     class Meta:
-#         model = Service
-#         fields = '__all__'
+class PatientSerializer(serializers.ModelSerializer):
+    created_date = serializers.DateTimeField(format="%d %m %Y %H:%M")
+    model = Patient
+    fields = ['full_name', 'phone_number', 'doctor_service', 'birthday', 'department', 'reception',
+              'started_time', 'end_time', 'gender_patient', 'doctor', 'status_patient', 'created_date']
 
 
 class MakeDoctorServicesSerializer(serializers.ModelSerializer):
@@ -247,25 +251,16 @@ class HistoryReceptionInfoPatientSerializer(serializers.ModelSerializer):
 
 
 class CustomerRecordSerializer(serializers.ModelSerializer):
+    reception_detail = ReceptionSerializer(source='reception', read_only=True)
+    patient_detail = PatientSerializer(source='patient', read_only=True)
+    doctor_detail = DoctorSerializer(source='doctor', read_only=True)
+    service_detail = DoctorServicesSerializer(source='service', read_only=True)
+    department_detail = DepartmentSerializer(source='department', read_only=True)
+
     class Meta:
         model = CustomerRecord
-        fields = ['payment_type']
-
-
-class PaymentInfoPatientSerializer(serializers.ModelSerializer):
-    doctor_patient = NameDoctorSerializer()
-    department_patient = DepartmentSerializer()
-    services = Make2DoctorServicesSerializer()
-    patient_customer = CustomerRecordSerializer()
-    class Meta:
-        model = Patient
-        fields = ['full_name', 'doctor_patient', 'created_date', 'department_patient', 'services', 'patient_customer']
-
-
-class InfoPatientSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Patient
-        fields = ['full_name', 'phone_number', 'gender_patient']
+        fields = ['reception_detail', 'patient_detail', 'doctor_detail', 'service_detail', 'department_detail', 'price', 'change',
+                  'payment_type', 'created_date', 'phone_number', 'created_time']
 
 
 
