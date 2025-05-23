@@ -142,6 +142,10 @@ class InfoPatientViewSet(viewsets.ModelViewSet):
     queryset = Patient.objects.all()
     serializer_class = InfoPatientSerializer
 
+class PaymentViewSet(viewsets.ModelViewSet):
+    queryset = Payment.objects.all()
+    serializer_class = PaymentSerializer
+
 
 class CustomerRecordViewSet(viewsets.ModelViewSet):
     queryset = CustomerRecord.objects.all()

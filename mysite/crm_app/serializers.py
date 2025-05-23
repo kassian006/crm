@@ -205,9 +205,11 @@ class HistoryRecordSerializer(serializers.ModelSerializer):
 
 class PatientSerializer(serializers.ModelSerializer):
     created_date = serializers.DateTimeField(format="%d %m %Y %H:%M")
-    model = Patient
-    fields = ['full_name', 'phone_number', 'doctor_service', 'birthday', 'department', 'reception',
-              'started_time', 'end_time', 'gender_patient', 'doctor', 'status_patient', 'created_date']
+
+    class Meta:
+        model = Patient
+        fields = ['full_name', 'phone_number', 'doctor_service', 'birthday', 'department', 'reception',
+                  'started_time', 'end_time', 'gender_patient', 'doctor', 'status_patient', 'created_date']
 
 
 class MakeDoctorServicesSerializer(serializers.ModelSerializer):
@@ -282,6 +284,14 @@ class PatientNameSerializer(serializers.ModelSerializer):
         model = Patient
         fields = ['full_name']
 
+class PaymentSerializer(serializers.ModelSerializer):
+    patient_detail = PatientNameSerializer(source='patient', read_only=True)
+    doctor_detail = DoctorProfileSerializer(source='doctor', read_only=True)
+    service_detail = DoctorServicesSerializer(source='service', read_only=True)
+    class Meta:
+        model = Payment
+        fields = ['patient_detail', 'doctor_detail', 'service_detail', 'payment_type', ]
+
 
 class CustomerRecordSerializer(serializers.ModelSerializer):
     reception_detail = ReceptionSerializer(source='reception', read_only=True)
@@ -332,3 +342,11 @@ class AnalyticsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Analytics
         fields = '__all__'
+
+
+
+class Report(serializers.ModelSerializer):
+    class Meta:
+        model = CustomerRecord
+        fields = ['date', 'patient', 'service', 'payment_type', 'price', ]
+
