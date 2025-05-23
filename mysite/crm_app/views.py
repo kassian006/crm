@@ -96,14 +96,30 @@ class ReceptionViewSet(viewsets.ModelViewSet):
 
 class DoctorViewSet(viewsets.ModelViewSet):
     queryset = Doctor.objects.all()
-    serializer_class = DoctorSerializer
-    filter_backends = [filters.SearchFilter]
+    serializer_class = DoctorProfileSerializer
+
+    def get_queryset(self):
+        return Doctor.objects.filter(pk=self.request.user.pk)
+
+
+class DoctorListViewSet(viewsets.ModelViewSet):
+    queryset = Doctor.objects.all()
+    serializer_class = DoctorListSerializer
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
+    filterset_fields = ['department']
     search_fields = ['first_name', 'last_name']
+
 
 class DoctorServicesViewSet(viewsets.ModelViewSet):
     queryset = DoctorServices.objects.all()
     serializer_class = MakeDoctorServicesSerializer
 
+
+class PatientViewSet(viewsets.ModelViewSet):
+    queryset = Patient.objects.all()
+    serializer_class = PatientSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = PatientFilter
 
 
 class MakeAppointmentInfoPatientViewSet(viewsets.ModelViewSet):
@@ -132,10 +148,20 @@ class InfoPatientViewSet(viewsets.ModelViewSet):
     queryset = Patient.objects.all()
     serializer_class = InfoPatientSerializer
 
+class PaymentViewSet(viewsets.ModelViewSet):
+    queryset = Payment.objects.all()
+    serializer_class = PaymentSerializer
+
 
 class CustomerRecordViewSet(viewsets.ModelViewSet):
     queryset = CustomerRecord.objects.all()
     serializer_class = CustomerRecordSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = PatientFilter
+
+class CheckRecordListAPIView(generics.ListAPIView):
+    queryset = CustomerRecord.objects.all()
+    serializer_class = CheckRecordSerializer
 
 
 class HistoryRecordViewSet(viewsets.ModelViewSet):

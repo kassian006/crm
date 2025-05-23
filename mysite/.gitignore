@@ -4,6 +4,7 @@ pycache/
 *.pyc
 *.pyo
 *lime/pycache/
+*migrations/
 # Виртуальное окружение
 venv/
 .venv/

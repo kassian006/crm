@@ -116,6 +116,10 @@ class DoctorServices(models.Model):
     salary_doctor = models.PositiveSmallIntegerField()
     service_label = models.CharField(max_length=10, null=True, blank=True)  # Новое поле для метки, например "FLY"
 
+    def __str__(self):
+        return f'{self.doctor_service}, {self.department}'
+
+
     def get_discount_price(self):
         return self.price * (1 - self.discount)
 
@@ -164,27 +168,30 @@ class Patient(models.Model):
         }
 
 
-class CustomerRecord(models.Model):
-    reception = models.ForeignKey(Reception, related_name='reception_customer', on_delete=models.CASCADE)
+class Payment(models.Model):
     patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name='patient_customer')
     doctor = models.ForeignKey(Doctor, related_name='doctor_customer', on_delete=models.CASCADE)
     service = models.ForeignKey(DoctorServices, on_delete=models.SET_NULL, null=True)
-    department = models.ForeignKey(Department, on_delete=models.SET_NULL, null=True)
-    price = models.PositiveIntegerField(default=0)
-    change = models.PositiveIntegerField(null=True, blank=True)
     PAYMENT_CHOICES = (
         ('cash', 'Наличные'),
         ('card', 'Карта'),
     )
     payment_type = models.CharField(max_length=10, choices=PAYMENT_CHOICES, default='cash')
+
+
+class CustomerRecord(models.Model):
+    reception = models.ForeignKey(Reception, related_name='reception_customer', on_delete=models.CASCADE)
+    department = models.ForeignKey(Department, on_delete=models.SET_NULL, null=True)
+    change = models.PositiveIntegerField(null=True, blank=True)
     created_date = models.DateTimeField(auto_now_add=True)
     phone_number = PhoneNumberField(region='KG', null=True, blank=True)
     created_time = models.TimeField(auto_now_add=True, )  # расширение времени
+    payment_type = models.ForeignKey(Payment, on_delete=models.CASCADE)
     #  инфо о пациенте ушул класс мн берилет
     # сериалайзерге релитетнейм  мн доктордын ичинен запистерди фильтр кылуу
 
     def __str__(self):
-        return f"Invoice for {self.patient}"
+        return f"Invoice for CustomerRecord - {self.reception} - {self.department} - {self.payment_type} "
 
 
 class HistoryRecord(models.Model):
