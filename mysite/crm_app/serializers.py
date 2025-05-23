@@ -211,6 +211,19 @@ class MakeAppointmentInfoPatientSerializer(serializers.ModelSerializer):
         fields = ['full_name', 'reception_patient', 'doctor_patient', 'started_time', 'end_time', 'status_patient', 'department_patient', 'services']
 
 
+class CalendarSerializer(serializers.ModelSerializer):
+    doctor_name = serializers.CharField(source='doctor.first_name', read_only=True)
+    doctor_surname = serializers.CharField(source='doctor.last_name', read_only=True)
+    department_name = serializers.CharField(source='department.department_name', read_only=True)
+    service_label = serializers.CharField(source='doctor_service.service_label', read_only=True)
+    status_display = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Patient
+        fields = ['full_name', 'started_time', 'end_time', 'appointment_date',
+            'status_display', 'doctor_name', 'doctor_surname', 'department_name', 'service_label']
+
+
 class HistoryRecordInfoPatientSerializer(serializers.ModelSerializer):
     reception_patient = NameReceptionSerializer()
     doctor_patient = NameDoctorSerializer()
@@ -281,9 +294,13 @@ class InfoPatientSerializer(serializers.ModelSerializer):
 
 
 class PriceListSerializer(serializers.ModelSerializer):
+    department_name = serializers.CharField(source='department.department_name', read_only=True)
+    service_name = serializers.CharField(source='service.doctor_service', read_only=True)
+    price = serializers.IntegerField(source='service.price', read_only=True)
+
     class Meta:
         model = PriceList
-        fields = '__all__'
+        fields = ['department_name', 'service_name', 'price']
 
 
 class AnalyticsSerializer(serializers.ModelSerializer):

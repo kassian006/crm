@@ -118,6 +118,12 @@ class HistoryRecordInfoPatientViewSet(viewsets.ModelViewSet):
     serializer_class = HistoryRecordInfoPatientSerializer
 
 
+
+class CalendarViewSet(viewsets.ModelViewSet):
+    queryset = Patient.objects.all()
+    serializer_class = CalendarSerializer
+
+
 class PaymentInfoPatientViewSet(viewsets.ModelViewSet):
     queryset = Patient.objects.all()
     serializer_class = PaymentInfoPatientSerializer

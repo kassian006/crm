@@ -14,6 +14,7 @@ router.register(r'history_record_info', HistoryRecordInfoPatientViewSet, basenam
 router.register(r'payment_record_info', PaymentInfoPatientViewSet, basename='payment_record_info')
 router.register(r'patient_info', InfoPatientViewSet, basename='patient_info')
 router.register(r'customer_record', CustomerRecordViewSet, basename='customer_record')
+router.register(r'calendar_doctor', CalendarViewSet, basename='calendar_doctor')
 router.register(r'history_record', HistoryRecordViewSet, basename='history_record')
 router.register(r'price_list', PriceListViewSet, basename='price_list')
 router.register(r'analytic', AnalyticsViewSet, basename='analytic')

@@ -114,6 +114,7 @@ class DoctorServices(models.Model):
     price = models.PositiveIntegerField(default=0)
     discount = models.DecimalField(max_digits=5, decimal_places=2, default=0.0)
     salary_doctor = models.PositiveSmallIntegerField()
+    service_label = models.CharField(max_length=10, null=True, blank=True)  # Новое поле для метки, например "FLY"
 
     def get_discount_price(self):
         return self.price * (1 - self.discount)
@@ -137,6 +138,8 @@ class Patient(models.Model):
     )
     status_patient = models.CharField(max_length=32, choices=STATUS_CHOICES)
     created_date = models.DateTimeField(auto_now_add=True)
+    appointment_date = models.DateField()  # Новое поле для даты записи
+
 
     def __str__(self):
         return f'{self.full_name}, {self.status_patient}'
