@@ -172,9 +172,14 @@ class HistoryRecordViewSet(viewsets.ModelViewSet):
     serializer_class = HistoryRecordSerializer
 
 
-class PriceListViewSet(viewsets.ModelViewSet):
+class PriceListAPIView(generics.ListAPIView):
     queryset = PriceList.objects.all()
     serializer_class = PriceListSerializer
+
+
+class PriceDetailAPIView(generics.RetrieveAPIView):
+    queryset = PriceList.objects.all()
+    serializer_class = PriceDetailSerializer
 
 
 class AnalyticsViewSet(viewsets.ModelViewSet):
