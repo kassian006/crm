@@ -76,8 +76,8 @@ class UserProfileViewSet(viewsets.ModelViewSet):
     queryset = UserProfile.objects.all()
     serializer_class = UserProfileSerializer
 
-    def get_queryset(self):
-        return UserProfile.objects.filter(user__id=self.request.user.id)
+    # def get_queryset(self):
+    #     return UserProfile.objects.filter(user__id=self.request.user.id)
 
 class DepartmentViewSet(viewsets.ModelViewSet):
     queryset = Department.objects.all()
