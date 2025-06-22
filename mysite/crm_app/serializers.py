@@ -213,10 +213,9 @@ class PatientSerializer(serializers.ModelSerializer):
 
 
 class MakeDoctorServicesSerializer(serializers.ModelSerializer):
-    services = DepartmentSerializer()
     class Meta:
         model = DoctorServices
-        fields = ['doctor_service', 'price', 'services']
+        fields = ['doctor_service', 'price']
 
 
 class Make1DoctorServicesSerializer(serializers.ModelSerializer):
@@ -231,14 +230,33 @@ class Make2DoctorServicesSerializer(serializers.ModelSerializer):
         fields = ['doctor_service', 'price']
 
 
+class PriceDocSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DoctorServices
+        fields = ['price']
+
+
 class MakeAppointmentInfoPatientSerializer(serializers.ModelSerializer):
     reception_patient = NameReceptionSerializer()
     doctor_patient = NameDoctorSerializer()
     department_patient = DepartmentSerializer()
-    services = MakeDoctorServicesSerializer()
+    doctor_service = MakeDoctorServicesSerializer()
     class Meta:
         model = Patient
-        fields = ['full_name', 'reception_patient', 'doctor_patient', 'started_time', 'end_time', 'status_patient', 'department_patient', 'services']
+        fields = ['full_name', 'reception_patient', 'doctor_patient', 'started_time', 'end_time', 'status_patient', 'department_patient', 'doctor_service']
+
+
+class CalendarSerializer(serializers.ModelSerializer):
+    doctor_name = serializers.CharField(source='doctor.first_name', read_only=True)
+    doctor_surname = serializers.CharField(source='doctor.last_name', read_only=True)
+    department_name = serializers.CharField(source='department.department_name', read_only=True)
+    service_label = serializers.CharField(source='doctor_service.service_label', read_only=True)
+    status_display = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Patient
+        fields = ['full_name', 'started_time', 'end_time', 'appointment_date',
+            'status_display', 'doctor_name', 'doctor_surname', 'department_name', 'service_label']
 
 
 class HistoryRecordInfoPatientSerializer(serializers.ModelSerializer):
@@ -248,10 +266,10 @@ class HistoryRecordInfoPatientSerializer(serializers.ModelSerializer):
     services = Make1DoctorServicesSerializer()
     record = HistoryRecordInfoPatSerializer()
     count_record = serializers.SerializerMethodField()
-    count_record_history = serializers.ModelSerializer()
+    count_record_history = serializers.SerializerMethodField()
     class Meta:
         model = Patient
-        fields = ['full_name', 'reception_patient', 'doctor_patient', 'created_date', 'department_patient',
+        fields = ['full_name', 'reception_patient', 'doctor_patient', 'appointment_date', 'department_patient',
                   'services', 'record', 'count_record', 'count_record', 'count_record_history']
 
     def get_count_record(self, obj):
@@ -268,10 +286,11 @@ class HistoryReceptionInfoPatientSerializer(serializers.ModelSerializer):
     services = Make1DoctorServicesSerializer()
     record = HistoryRecordInfoPatSerializer()
     count_record = serializers.SerializerMethodField()
-    count_record_history = serializers.ModelSerializer()
+    count_record_history = serializers.SerializerMethodField()
     class Meta:
         model = Patient
-        fields = ['full_name', 'reception_patient', 'doctor_patient', 'created_date', 'department_patient', 'services', 'record', 'count_record', 'count_record_history']
+        fields = ['full_name', 'reception_patient', 'doctor_patient', 'created_date', 'department_patient',
+                  'services', 'record', 'count_record', 'count_record_history']
 
     def get_count_record(self, obj):
             return obj.get_count_record()
@@ -299,11 +318,20 @@ class CustomerRecordSerializer(serializers.ModelSerializer):
     doctor_detail = DoctorProfileSerializer(source='doctor', read_only=True)
     service_detail = DoctorServicesSerializer(source='service', read_only=True)
     department_detail = DepartmentSerializer(source='department', read_only=True)
+    doctor_ser = PriceDocSerializer()
 
     class Meta:
         model = CustomerRecord
-        fields = ['reception_detail', 'patient_detail', 'doctor_detail', 'service_detail', 'department_detail', 'price', 'change',
+        fields = ['reception_detail', 'patient_detail', 'doctor_detail', 'service_detail', 'department_detail', 'doctor_ser', 'change',
                   'payment_type', 'created_date', 'phone_number', 'created_time']
+
+
+class CustRecordSerializer(serializers.ModelSerializer):
+    doctor_ser = PriceDocSerializer()
+    class Meta:
+        model = CustomerRecord
+        fields = ['doctor_ser', 'payment_type', 'created_date']
+
 
 class CheckRecordSerializer(serializers.ModelSerializer):
     patient_name = PatientNameSerializer(source='patient', read_only=True)
@@ -318,11 +346,11 @@ class CheckRecordSerializer(serializers.ModelSerializer):
 class PaymentInfoPatientSerializer(serializers.ModelSerializer):
     doctor_patient = NameDoctorSerializer()
     department_patient = DepartmentSerializer()
-    services = Make2DoctorServicesSerializer()
-    patient_customer = CustomerRecordSerializer()
+    services = Make1DoctorServicesSerializer()
+    patient_customer = CustRecordSerializer()
     class Meta:
         model = Patient
-        fields = ['full_name', 'doctor_patient', 'created_date', 'department_patient', 'services', 'patient_customer']
+        fields = ['full_name', 'doctor_patient', 'appointment_date', 'department_patient', 'services', 'patient_customer']
 
 
 class InfoPatientSerializer(serializers.ModelSerializer):
@@ -331,18 +359,20 @@ class InfoPatientSerializer(serializers.ModelSerializer):
         fields = ['full_name', 'phone_number', 'gender_patient']
 
 
-
 class PriceListSerializer(serializers.ModelSerializer):
+    department_name = serializers.CharField(source='department.department_name', read_only=True)
+    service_name = serializers.CharField(source='service.doctor_service', read_only=True)
+    price = serializers.IntegerField(source='service.price', read_only=True)
+
     class Meta:
         model = PriceList
-        fields = '__all__'
+        fields = ['department_name', 'service_name', 'price']
 
 
 class AnalyticsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Analytics
         fields = '__all__'
-
 
 
 class Report(serializers.ModelSerializer):

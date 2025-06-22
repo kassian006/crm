@@ -114,6 +114,7 @@ class DoctorServices(models.Model):
     price = models.PositiveIntegerField(default=0)
     discount = models.DecimalField(max_digits=5, decimal_places=2, default=0.0)
     salary_doctor = models.PositiveSmallIntegerField()
+    service_label = models.CharField(max_length=10, null=True, blank=True)  # Новое поле для метки, например "FLY"
 
     def __str__(self):
         return f'{self.doctor_service}, {self.department}'
@@ -141,6 +142,8 @@ class Patient(models.Model):
     )
     status_patient = models.CharField(max_length=32, choices=STATUS_CHOICES)
     created_date = models.DateTimeField(auto_now_add=True)
+    appointment_date = models.DateField()  # Новое поле для даты записи
+
 
     def __str__(self):
         return f'{self.full_name}, {self.status_patient}'
@@ -180,10 +183,12 @@ class CustomerRecord(models.Model):
     reception = models.ForeignKey(Reception, related_name='reception_customer', on_delete=models.CASCADE)
     department = models.ForeignKey(Department, on_delete=models.SET_NULL, null=True)
     change = models.PositiveIntegerField(null=True, blank=True)
-    created_date = models.DateTimeField(auto_now_add=True)
+    created_date = models.DateField(auto_now_add=True)
     phone_number = PhoneNumberField(region='KG', null=True, blank=True)
     created_time = models.TimeField(auto_now_add=True, )  # расширение времени
     payment_type = models.ForeignKey(Payment, on_delete=models.CASCADE)
+    doctor_ser = models.ForeignKey(DoctorServices, related_name='doctor_ser', on_delete=models.CASCADE)
+
     #  инфо о пациенте ушул класс мн берилет
     # сериалайзерге релитетнейм  мн доктордын ичинен запистерди фильтр кылуу
 

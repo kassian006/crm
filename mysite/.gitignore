@@ -1,5 +1,6 @@
 # Кеши Python
 pycache/
+*migrations/
 *.pyc
 *.pyo
 *lime/pycache/
