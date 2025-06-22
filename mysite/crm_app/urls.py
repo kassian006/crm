@@ -5,13 +5,13 @@ from .views import *
 router = SimpleRouter()
 router.register(r'user_profile', UserProfileViewSet, basename='user_profile')
 router.register(r'department', DepartmentViewSet, basename='department')
-router.register(r'speciality', SpecialityViewSet, basename='speciality')
+router.register(r'speciali  ty', SpecialityViewSet, basename='speciality')
 router.register(r'reception', ReceptionViewSet, basename='reception')
 router.register(r'doctor', DoctorViewSet, basename='doctor')
 router.register(r'doctor_list', DoctorListViewSet, basename='doctor_list')
 router.register(r'doctor_service', DoctorServicesViewSet, basename='doctor_service')
-router.register(r'make_appointment_info_patient', MakeAppointmentInfoPatientViewSet, basename='make_appointment_info_patient')
 router.register(r'history_record_info', HistoryRecordInfoPatientViewSet, basename='history_record_info')
+router.register(r'history_reception_info', HistoryReceptionInfoPatientViewSet, basename='history_reception_info')
 router.register(r'payment_record_info', PaymentInfoPatientViewSet, basename='payment_record_info')
 router.register(r'patient_info', InfoPatientViewSet, basename='patient_info')
 router.register(r'payment', PaymentViewSet, basename='payment')
@@ -29,4 +29,6 @@ urlpatterns = [
     path('login/admin/', CustomAdminLoginView.as_view(), name='admin-login'),
     path('logout/', LogoutView.as_view(), name='logout'),
     path('print_check/', CheckRecordListAPIView.as_view(), name='print_check'),
+    path('make_appointment_info_patient/', MakeAppointmentInfoPatientAPIView.as_view(), name='make_appointment_info_patient'),
+
 ]

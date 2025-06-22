@@ -183,10 +183,12 @@ class CustomerRecord(models.Model):
     reception = models.ForeignKey(Reception, related_name='reception_customer', on_delete=models.CASCADE)
     department = models.ForeignKey(Department, on_delete=models.SET_NULL, null=True)
     change = models.PositiveIntegerField(null=True, blank=True)
-    created_date = models.DateTimeField(auto_now_add=True)
+    created_date = models.DateField(auto_now_add=True)
     phone_number = PhoneNumberField(region='KG', null=True, blank=True)
     created_time = models.TimeField(auto_now_add=True, )  # расширение времени
     payment_type = models.ForeignKey(Payment, on_delete=models.CASCADE)
+    doctor_ser = models.ForeignKey(DoctorServices, related_name='doctor_ser', on_delete=models.CASCADE)
+
     #  инфо о пациенте ушул класс мн берилет
     # сериалайзерге релитетнейм  мн доктордын ичинен запистерди фильтр кылуу
 
