@@ -360,13 +360,19 @@ class InfoPatientSerializer(serializers.ModelSerializer):
 
 
 class PriceListSerializer(serializers.ModelSerializer):
-    department_name = serializers.CharField(source='department.department_name', read_only=True)
-    service_name = serializers.CharField(source='service.doctor_service', read_only=True)
-    price = serializers.IntegerField(source='service.price', read_only=True)
+    department = DepartmentSerializer(read_only=True)
 
     class Meta:
         model = PriceList
-        fields = ['department_name', 'service_name', 'price']
+        fields = ['id', 'department']
+
+
+class PriceDetailSerializer(serializers.ModelSerializer):
+    service = Make2DoctorServicesSerializer(read_only=True)
+
+    class Meta:
+        model = PriceList
+        fields = ['service']
 
 
 class AnalyticsSerializer(serializers.ModelSerializer):

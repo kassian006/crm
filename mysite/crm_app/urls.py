@@ -18,7 +18,6 @@ router.register(r'payment', PaymentViewSet, basename='payment')
 router.register(r'customer_record', CustomerRecordViewSet, basename='customer_record')
 router.register(r'calendar_doctor', CalendarViewSet, basename='calendar_doctor')
 router.register(r'history_record', HistoryRecordViewSet, basename='history_record')
-router.register(r'price_list', PriceListViewSet, basename='price_list')
 router.register(r'analytic', AnalyticsViewSet, basename='analytic')
 
 urlpatterns = [
@@ -30,5 +29,7 @@ urlpatterns = [
     path('logout/', LogoutView.as_view(), name='logout'),
     path('print_check/', CheckRecordListAPIView.as_view(), name='print_check'),
     path('make_appointment_info_patient/', MakeAppointmentInfoPatientAPIView.as_view(), name='make_appointment_info_patient'),
+    path('price_list/', PriceListAPIView.as_view(), name='price_list'),
+    path('price_list/<int:pk>/', PriceDetailAPIView.as_view(), name='price_detail'),
 
 ]
