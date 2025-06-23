@@ -160,7 +160,7 @@ class CustomerRecordViewSet(viewsets.ModelViewSet):
     queryset = CustomerRecord.objects.all()
     serializer_class = CustomerRecordSerializer
     filter_backends = [DjangoFilterBackend]
-    filterset_class = PatientFilter
+    # filterset_class = PatientFilter
 
 class CheckRecordListAPIView(generics.ListAPIView):
     queryset = CustomerRecord.objects.all()
