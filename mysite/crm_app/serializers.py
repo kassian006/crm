@@ -236,14 +236,63 @@ class PriceDocSerializer(serializers.ModelSerializer):
         fields = ['price']
 
 
+# class MakeAppointmentInfoPatientSerializer(serializers.ModelSerializer):
+#     reception = NameReceptionSerializer()
+#     doctor = NameDoctorSerializer()
+#     department = DepartmentSerializer()
+#     doctor_service = MakeDoctorServicesSerializer()
+#     class Meta:
+#         model = Patient
+#         fields = ['full_name', 'reception', 'doctor', 'started_time', 'end_time', 'status_patient', 'department', 'doctor_service']
+
 class MakeAppointmentInfoPatientSerializer(serializers.ModelSerializer):
-    reception_patient = NameReceptionSerializer()
-    doctor_patient = NameDoctorSerializer()
-    department_patient = DepartmentSerializer()
-    doctor_service = MakeDoctorServicesSerializer()
+    reception = NameReceptionSerializer(read_only=True)
+    doctor = NameDoctorSerializer(read_only=True)
+    department = DepartmentSerializer(read_only=True)
+    doctor_service = MakeDoctorServicesSerializer(read_only=True)
+    birthday = serializers.DateField(format="%d.%m.%Y", input_formats=['%d.%m.%Y', '%Y-%m-%d'])
+
     class Meta:
         model = Patient
-        fields = ['full_name', 'reception_patient', 'doctor_patient', 'started_time', 'end_time', 'status_patient', 'department_patient', 'doctor_service']
+        fields = ['full_name', 'reception', 'doctor', 'started_time', 'end_time', 'status_patient', 'department', 'doctor_service', 'birthday']
+        extra_kwargs = {
+            'full_name': {'required': True},
+            'started_time': {'required': True},
+            'end_time': {'required': True},
+            'status_patient': {'required': True},
+            'department': {'required': True},
+            'doctor_service': {'required': True},
+            'birthday': {'required': True},
+        }
+
+    def create(self, validated_data):
+        reception_id = validated_data.pop('reception', None)
+        doctor_id = validated_data.pop('doctor', None)
+        department_id = validated_data.pop('department', None)
+        doctor_service_id = validated_data.pop('doctor_service', None)
+        birthday = validated_data.pop('birthday')
+
+        if not department_id:
+            raise serializers.ValidationError({"department": "This field is required."})
+
+        reception = Reception.objects.get(id=reception_id) if reception_id else None
+        doctor = Doctor.objects.get(id=doctor_id) if doctor_id else None
+        department = Department.objects.get(id=department_id) if department_id else None
+        doctor_service = DoctorServices.objects.get(id=doctor_service_id) if doctor_service_id else None
+
+        patient = Patient.objects.create(
+            full_name=validated_data.get('full_name', ''),
+            started_time=validated_data.get('started_time'),
+            end_time=validated_data.get('end_time'),
+            status_patient=validated_data.get('status_patient', 'Предзапись'),
+            reception=reception,
+            doctor=doctor,
+            department=department,
+            doctor_service=doctor_service,
+            birthday=birthday
+        )
+        return patient
+
 
 
 class CalendarSerializer(serializers.ModelSerializer):
@@ -260,43 +309,46 @@ class CalendarSerializer(serializers.ModelSerializer):
 
 
 class HistoryRecordInfoPatientSerializer(serializers.ModelSerializer):
-    reception_patient = NameReceptionSerializer()
-    doctor_patient = NameDoctorSerializer()
-    department_patient = DepartmentSerializer()
-    services = Make1DoctorServicesSerializer()
-    record = HistoryRecordInfoPatSerializer()
+    reception = NameReceptionSerializer(read_only=True)
+    doctor = NameDoctorSerializer(read_only=True)
+    department = DepartmentSerializer(read_only=True)
+    doctor_service = Make1DoctorServicesSerializer(read_only=True)
+    patient_history = HistoryRecordInfoPatSerializer(read_only=True, many=True)
     count_record = serializers.SerializerMethodField()
-    count_record_history = serializers.SerializerMethodField()
+    # count_record_history = serializers.SerializerMethodField()
+
     class Meta:
         model = Patient
-        fields = ['full_name', 'reception_patient', 'doctor_patient', 'appointment_date', 'department_patient',
-                  'services', 'record', 'count_record', 'count_record', 'count_record_history']
+        fields = ['full_name', 'reception', 'doctor', 'appointment_date', 'department',
+                  'doctor_service', 'patient_history', 'count_record']  # Убрано дублирование count_record, count_record_history
 
     def get_count_record(self, obj):
-            return obj.get_count_record()
+        return obj.get_count_record()
 
-    def get_count_record_history(self, obj):
-        return obj.get_count_record_history()
+    # def get_count_record_history(self, obj):
+    #     return obj.get_count_record_history()
 
 
 class HistoryReceptionInfoPatientSerializer(serializers.ModelSerializer):
-    reception_patient = NameReceptionSerializer()
-    doctor_patient = NameDoctorSerializer()
-    department_patient = DepartmentSerializer()
-    services = Make1DoctorServicesSerializer()
-    record = HistoryRecordInfoPatSerializer()
+    reception = NameReceptionSerializer(read_only=True)  # Исправлено
+    doctor = NameDoctorSerializer(read_only=True)  # Исправлено
+    department = DepartmentSerializer(read_only=True)  # Исправлено
+    doctor_service = Make1DoctorServicesSerializer(read_only=True)
+    record = HistoryRecordInfoPatSerializer(read_only=True)
     count_record = serializers.SerializerMethodField()
-    count_record_history = serializers.SerializerMethodField()
+    appointment_date = serializers.DateField(format="%d.%m.%Y")
+
+
     class Meta:
         model = Patient
-        fields = ['full_name', 'reception_patient', 'doctor_patient', 'created_date', 'department_patient',
-                  'services', 'record', 'count_record', 'count_record_history']
+        fields = ['full_name', 'reception', 'doctor', 'appointment_date', 'department',
+                  'doctor_service', 'record', 'count_record']
 
     def get_count_record(self, obj):
             return obj.get_count_record()
 
-    def get_count_record_history(self, obj):
-        return obj.get_count_record_history()
+    # def get_count_record_history(self, obj):
+    #     return obj.get_count_record_history()
 
 class PatientNameSerializer(serializers.ModelSerializer):
     class Meta:
@@ -337,6 +389,7 @@ class CheckRecordSerializer(serializers.ModelSerializer):
     patient_name = PatientNameSerializer(source='patient', read_only=True)
     doctor_name = DoctorNameSerializer(source='doctor', read_only=True)
     service_name = DoctorNameServicesSerializer(source='service', read_only=True)
+    price = serializers.DecimalField(max_digits=10, decimal_places=2, source='doctor_ser.price', read_only=True)
 
     class Meta:
         model = CustomerRecord
@@ -344,13 +397,13 @@ class CheckRecordSerializer(serializers.ModelSerializer):
 
 
 class PaymentInfoPatientSerializer(serializers.ModelSerializer):
-    doctor_patient = NameDoctorSerializer()
-    department_patient = DepartmentSerializer()
-    services = Make1DoctorServicesSerializer()
-    patient_customer = CustRecordSerializer()
+    doctor = NameDoctorSerializer(read_only=True)  # Исправлено
+    department = DepartmentSerializer(read_only=True)  # Исправлено
+    doctor_service = Make2DoctorServicesSerializer(read_only=True)
+    patient_customer = CustomerRecordSerializer(read_only=True)
     class Meta:
         model = Patient
-        fields = ['full_name', 'doctor_patient', 'appointment_date', 'department_patient', 'services', 'patient_customer']
+        fields = ['full_name', 'doctor', 'appointment_date', 'department', 'doctor_service', 'patient_customer']
 
 
 class InfoPatientSerializer(serializers.ModelSerializer):

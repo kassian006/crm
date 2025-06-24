@@ -122,8 +122,8 @@ class PatientViewSet(viewsets.ModelViewSet):
     filterset_class = PatientFilter
 
 
-class MakeAppointmentInfoPatientAPIView(generics.CreateAPIView):
-    queryset = Patient.objects.all()
+class MakeAppointmentInfoPatientAPIView(generics.ListCreateAPIView):
+    queryset = Patient.objects.select_related('reception', 'doctor', 'department', 'doctor_service').all()
     serializer_class = MakeAppointmentInfoPatientSerializer
 
 

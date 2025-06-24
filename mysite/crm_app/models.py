@@ -111,7 +111,7 @@ class Doctor(UserProfile):
 class DoctorServices(models.Model):
     doctor_service = models.CharField(max_length=256)
     department = models.ForeignKey(Department, on_delete=models.CASCADE, related_name="department_services")
-    price = models.PositiveIntegerField(default=0)
+    price = models.DecimalField(max_digits=10, decimal_places=2)
     discount = models.DecimalField(max_digits=5, decimal_places=2, default=0.0)
     salary_doctor = models.PositiveSmallIntegerField()
     service_label = models.CharField(max_length=10, null=True, blank=True)  # Новое поле для метки, например "FLY"
@@ -128,7 +128,7 @@ class Patient(models.Model):
     full_name = models.CharField(max_length=256)
     phone_number = PhoneNumberField(null=True, blank=True)
     doctor_service = models.ForeignKey(DoctorServices, on_delete=models.CASCADE, related_name='service_doctor')
-    birthday = models.DateField()
+    birthday = models.DateField(null=True, blank=True)
     department = models.ForeignKey(Department, on_delete=models.CASCADE, related_name='department_patient')
     reception = models.ForeignKey(Reception, on_delete=models.CASCADE, related_name='reception_patient')
     started_time = models.TimeField()
@@ -142,30 +142,34 @@ class Patient(models.Model):
     )
     status_patient = models.CharField(max_length=32, choices=STATUS_CHOICES)
     created_date = models.DateTimeField(auto_now_add=True)
-    appointment_date = models.DateField()  # Новое поле для даты записи
-
+    appointment_date = models.DateField(auto_now_add=True)  # Новое поле для даты записи
 
     def __str__(self):
         return f'{self.full_name}, {self.status_patient}'
 
-    def get_count_record(self):
-        record = self.speciality_reception.all()
-        if record.exists():
-            return record.count()
-        return 0
+    @classmethod
+    def get_count_record(cls):
+        """Получить статистику по всем пациентам"""
+        all_patients = cls.objects.all()
+        status_list = [patient.status_patient for patient in all_patients]
 
-    def get_count_record_history(self):
-        today = timezone.now().date()
-        total = Patient.objects.filter(created_date=today).count()
-        pred_records = Patient.objects.filter(status_patient='Предзапись', created_date=today).count()
-        live_records = Patient.objects.filter(status_patient='Живая очередь', created_date=today).count()
-        canceled_records = Patient.objects.filter(status_patient='Отмененные', created_date=today).count()
         return {
-            'total': total,
-            'pred_records': pred_records,
-            'live_records': live_records,
-            'canceled_records': canceled_records
+            "total": len(status_list),
+            "pred_records": len([status for status in status_list if status == 'Предзапись']),
+            "live_records": len([status for status in status_list if status == 'Живая очередь']),
+            "canceled_records": len([status for status in status_list if status == 'Отмененные']),
         }
+
+    # def get_count_record(self):
+    #     return self.patient_history.count()
+    #
+    # def get_count_record_history(self):
+    #     return {
+    #         "total": self.patient_history.count(),
+    #         "pred_records": self.patient_history.filter(record='в ожидании').count(),
+    #         "live_records": self.patient_history.filter(record='был в приеме').count(),
+    #         "canceled_records": self.patient_history.filter(record='отменен').count()
+    #     }
 
 
 class Payment(models.Model):
@@ -188,7 +192,6 @@ class CustomerRecord(models.Model):
     created_time = models.TimeField(auto_now_add=True, )  # расширение времени
     payment_type = models.ForeignKey(Payment, on_delete=models.CASCADE)
     doctor_ser = models.ForeignKey(DoctorServices, related_name='doctor_ser', on_delete=models.CASCADE)
-
     #  инфо о пациенте ушул класс мн берилет
     # сериалайзерге релитетнейм  мн доктордын ичинен запистерди фильтр кылуу
 
@@ -197,7 +200,7 @@ class CustomerRecord(models.Model):
 
 
 class HistoryRecord(models.Model):
-    patient = models.ForeignKey(Patient, related_name='patient_history', on_delete=models.CASCADE)
+    patient = models.ForeignKey(Patient, related_name='patient_history', on_delete=models.CASCADE, db_index=True)
     reception = models.ForeignKey(Reception, related_name='reception_history', on_delete=models.CASCADE)
     departament = models.ForeignKey(Department, related_name='departament_history', on_delete=models.CASCADE)
     doctor = models.ForeignKey(Doctor, related_name='doctor_history', on_delete=models.CASCADE)
@@ -233,14 +236,6 @@ class Analytics(models.Model):
 
     def __str__(self):
         return f' {self.patient}, {self.service}'
-
-
-
-
-
-
-
-
 
 
 
