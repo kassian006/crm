@@ -233,7 +233,7 @@ class Make2DoctorServicesSerializer(serializers.ModelSerializer):
 class PriceDocSerializer(serializers.ModelSerializer):
     class Meta:
         model = DoctorServices
-        fields = ['price']
+        fields = ['doctor_service', 'price']
 
 
 class MakeAppointmentInfoPatientSerializer(serializers.ModelSerializer):
@@ -301,7 +301,8 @@ class HistoryReceptionInfoPatientSerializer(serializers.ModelSerializer):
 class PatientNameSerializer(serializers.ModelSerializer):
     class Meta:
         model = Patient
-        fields = ['full_name']
+        fields = ['full_name', 'gender_patient']
+
 
 class PaymentSerializer(serializers.ModelSerializer):
     patient_detail = PatientNameSerializer(source='patient', read_only=True)
@@ -309,21 +310,47 @@ class PaymentSerializer(serializers.ModelSerializer):
     service_detail = DoctorServicesSerializer(source='service', read_only=True)
     class Meta:
         model = Payment
-        fields = ['patient_detail', 'doctor_detail', 'service_detail', 'payment_type', ]
+        fields = ['patient_detail', 'doctor_detail', 'service_detail', 'payment_type']
+
+class PaymentTypeNameSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Payment
+        fields = ['payment_type']
 
 
 class CustomerRecordSerializer(serializers.ModelSerializer):
-    reception_detail = ReceptionSerializer(source='reception', read_only=True)
-    patient_detail = PatientSerializer(source='patient', read_only=True)
-    doctor_detail = DoctorProfileSerializer(source='doctor', read_only=True)
-    service_detail = DoctorServicesSerializer(source='service', read_only=True)
+    # DETAIL FIELDS (только read-only для отображения)
+    patient_detail = PatientNameSerializer(source='patient', read_only=True)
+    doctor_detail = DoctorNameSerializer(source='doctor', read_only=True)
+    service_detail = DoctorServicesSerializer(source='doctor_ser', read_only=True)
     department_detail = DepartmentSerializer(source='department', read_only=True)
-    doctor_ser = PriceDocSerializer()
+    payment_type_detail = PaymentTypeNameSerializer(source='payment_type', read_only=True)
+
+    # ID FIELDS (write-only для создания)
+    patient = serializers.PrimaryKeyRelatedField(queryset=Patient.objects.all(), write_only=True)
+    doctor = serializers.PrimaryKeyRelatedField(queryset=Doctor.objects.all(), write_only=True)
+    doctor_ser = serializers.PrimaryKeyRelatedField(queryset=DoctorServices.objects.all(), write_only=True)
+    department = serializers.PrimaryKeyRelatedField(queryset=Department.objects.all(), write_only=True)
+    payment_type = serializers.PrimaryKeyRelatedField(queryset=Payment.objects.all(), write_only=True)
+
+    # Остальные поля
+    started_time = serializers.TimeField(format="%H:%M")
+    end_time = serializers.TimeField(format="%H:%M")
+    change = serializers.IntegerField(required=False)
+    phone_number = serializers.CharField()
 
     class Meta:
         model = CustomerRecord
-        fields = ['reception_detail', 'patient_detail', 'doctor_detail', 'service_detail', 'department_detail', 'doctor_ser', 'change',
-                  'payment_type', 'created_date', 'phone_number', 'created_time']
+        fields = [
+            'patient', 'patient_detail',
+            'doctor', 'doctor_detail',
+            'doctor_ser', 'service_detail',
+            'department', 'department_detail',
+            'payment_type', 'payment_type_detail',
+            'change', 'phone_number',
+            'started_time', 'end_time', 'created_date'
+        ]
+        read_only_fields = ['created_date']
 
 
 class CustRecordSerializer(serializers.ModelSerializer):
