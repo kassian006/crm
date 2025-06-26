@@ -5,6 +5,7 @@ from django.db import models
 from django.contrib.auth.base_user import BaseUserManager
 from django.utils import timezone
 from datetime import timedelta
+from django.db.models import Sum, Case, When, DecimalField, F
 
 
 ROLE_CHOICES = (
@@ -124,6 +125,39 @@ class DoctorServices(models.Model):
         return self.price * (1 - self.discount)
 
 
+class Payment(models.Model):
+    doctor = models.ForeignKey(Doctor, related_name='doctor_customer', on_delete=models.CASCADE)
+    service = models.ForeignKey(DoctorServices, on_delete=models.SET_NULL, null=True)
+    PAYMENT_CHOICES = (
+        ('cash', 'cash'),
+        ('card', 'card'),
+    )
+    payment_type = models.CharField(max_length=10, choices=PAYMENT_CHOICES, default='cash')
+
+    def __str__(self):
+        return f'{self.payment_type}'
+
+    @classmethod
+    def get_count_sum(cls):
+        """Получить сумму оплат по типу оплаты (наличные/карта) с учетом скидок"""
+        cash_total = 0
+        card_total = 0
+
+        for payment in cls.objects.select_related('service').all():
+            if payment.service:  # Check if service is not None
+                price = payment.service.price * (1 - payment.service.discount)  # Apply discount
+                if payment.payment_type == 'cash':
+                    cash_total += price
+                elif payment.payment_type == 'card':
+                    card_total += price
+
+        return {
+            "total": cash_total + card_total,
+            "cash": cash_total,
+            "card": card_total
+        }
+
+
 class Patient(models.Model):
     full_name = models.CharField(max_length=256)
     phone_number = PhoneNumberField(null=True, blank=True)
@@ -134,6 +168,7 @@ class Patient(models.Model):
     started_time = models.TimeField()
     end_time = models.TimeField()
     gender_patient = models.CharField(max_length=32, choices=GENDER_CHOICES)
+    payment = models.ForeignKey(Payment, on_delete=models.CASCADE, related_name='payment_customer', null=True, blank=True)
     doctor = models.ForeignKey(Doctor, on_delete=models.CASCADE, related_name='doctor_patient')
     STATUS_CHOICES = (
         ('Живая очередь', 'Живая очередь'),
@@ -160,6 +195,22 @@ class Patient(models.Model):
             "canceled_records": len([status for status in status_list if status == 'Отмененные']),
         }
 
+    @classmethod
+    def get_count_reception(cls):
+        """Получить статистику по пациентам: Предзапись и Живая очередь"""
+        all_patients = cls.objects.all()
+        status_list = [patient.status_patient for patient in all_patients]
+
+        pred = [status for status in status_list if status == 'Предзапись']
+        live = [status for status in status_list if status == 'Живая очередь']
+        canceled = [status for status in status_list if status == 'Отмененные']
+
+        return {
+            "total": len(pred) + len(live),
+            "pred_records": len(pred),
+            "live_records": len(live),
+            "canceled_records": len(canceled),
+        }
     # def get_count_record(self):
     #     return self.patient_history.count()
     #
@@ -171,18 +222,6 @@ class Patient(models.Model):
     #         "canceled_records": self.patient_history.filter(record='отменен').count()
     #     }
 
-
-class Payment(models.Model):
-    patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name='patient_customer')
-    doctor = models.ForeignKey(Doctor, related_name='doctor_customer', on_delete=models.CASCADE)
-    service = models.ForeignKey(DoctorServices, on_delete=models.SET_NULL, null=True)
-    PAYMENT_CHOICES = (
-        ('cash', 'Наличные'),
-        ('card', 'Карта'),
-    )
-    payment_type = models.CharField(max_length=10, choices=PAYMENT_CHOICES, default='cash')
-
-
 class CustomerRecord(models.Model):
     reception = models.ForeignKey(Reception, related_name='reception_customer', on_delete=models.CASCADE)
     department = models.ForeignKey(Department, on_delete=models.SET_NULL, null=True)
@@ -191,7 +230,7 @@ class CustomerRecord(models.Model):
     phone_number = PhoneNumberField(region='KG', null=True, blank=True)
     started_time = models.TimeField()
     end_time = models.TimeField()
-    payment_type = models.ForeignKey(Payment, on_delete=models.CASCADE)
+    payment_type = models.ForeignKey(Payment, on_delete=models.CASCADE, related_name='payment_type_cash')
     doctor_ser = models.ForeignKey(DoctorServices, related_name='doctor_ser', on_delete=models.CASCADE)
     doctor = models.ForeignKey(Doctor, related_name='customer_record_doctor', on_delete=models.CASCADE)
     patient = models.ForeignKey(Patient, related_name='patient_record', on_delete=models.CASCADE)

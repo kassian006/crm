@@ -314,16 +314,12 @@ class HistoryRecordInfoPatientSerializer(serializers.ModelSerializer):
     department = DepartmentSerializer(read_only=True)
     doctor_service = Make1DoctorServicesSerializer(read_only=True)
     patient_history = HistoryRecordInfoPatSerializer(read_only=True, many=True)
-    count_record = serializers.SerializerMethodField()
-    # count_record_history = serializers.SerializerMethodField()
 
     class Meta:
         model = Patient
         fields = ['full_name', 'reception', 'doctor', 'appointment_date', 'department',
-                  'doctor_service', 'patient_history', 'count_record']  # Убрано дублирование count_record, count_record_history
+                  'doctor_service', 'patient_history']  # Убрано дублирование count_record, count_record_history
 
-    def get_count_record(self, obj):
-        return obj.get_count_record()
 
     # def get_count_record_history(self, obj):
     #     return obj.get_count_record_history()
@@ -334,21 +330,19 @@ class HistoryReceptionInfoPatientSerializer(serializers.ModelSerializer):
     doctor = NameDoctorSerializer(read_only=True)  # Исправлено
     department = DepartmentSerializer(read_only=True)  # Исправлено
     doctor_service = Make1DoctorServicesSerializer(read_only=True)
-    record = HistoryRecordInfoPatSerializer(read_only=True)
-    count_record = serializers.SerializerMethodField()
+    # patient_history = HistoryRecordInfoPatSerializer(read_only=True, many=True)
+    patient_history_filtered = serializers.SerializerMethodField()  # Новое поле с фильтром
     appointment_date = serializers.DateField(format="%d.%m.%Y")
-
 
     class Meta:
         model = Patient
         fields = ['full_name', 'reception', 'doctor', 'appointment_date', 'department',
-                  'doctor_service', 'record', 'count_record']
+                  'doctor_service', 'patient_history_filtered']
 
-    def get_count_record(self, obj):
-            return obj.get_count_record()
+    def get_patient_history_filtered(self, obj):
+        filtered_history = obj.patient_history.filter(record='был в приеме')
+        return HistoryRecordInfoPatSerializer(filtered_history, many=True).data
 
-    # def get_count_record_history(self, obj):
-    #     return obj.get_count_record_history()
 
 class PatientNameSerializer(serializers.ModelSerializer):
     class Meta:
@@ -364,45 +358,67 @@ class PaymentSerializer(serializers.ModelSerializer):
         model = Payment
         fields = ['patient_detail', 'doctor_detail', 'service_detail', 'payment_type']
 
+
 class PaymentTypeNameSerializer(serializers.ModelSerializer):
     class Meta:
         model = Payment
         fields = ['payment_type']
 
 
+class HistoryRecordInfoPatientTotalSerializer(serializers.ModelSerializer):
+    count_record = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Patient
+        fields = ['count_record']
+
+    def get_count_record(self, obj):
+            return obj.get_count_record()
+
+
+class HistoryReceptionInfoPatientTotalSerializer(serializers.ModelSerializer):
+    count_reception = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Patient
+        fields = ['count_reception']
+
+    def get_count_reception(self, obj):
+            return obj.get_count_reception()
+
+
+# class PaymentTypeNameSumSerializer(serializers.ModelSerializer):
+#     total = serializers.DecimalField(max_digits=10, decimal_places=2)
+#     cash = serializers.DecimalField(max_digits=10, decimal_places=2)
+#     card = serializers.DecimalField(max_digits=10, decimal_places=2)
+#     count_sum = serializers.SerializerMethodField()
+#
+#     class Meta:
+#         model = Payment
+#         fields = ['count_record']
+#
+#     def get_count_sum(self, obj):
+#         return obj.get_count_sum()
+
+
+class PaymentTypeNameSumSerializer(serializers.Serializer):
+    total = serializers.DecimalField(max_digits=10, decimal_places=2)
+    cash = serializers.DecimalField(max_digits=10, decimal_places=2)
+    card = serializers.DecimalField(max_digits=10, decimal_places=2)
+
+
 class CustomerRecordSerializer(serializers.ModelSerializer):
-    # DETAIL FIELDS (только read-only для отображения)
-    patient_detail = PatientNameSerializer(source='patient', read_only=True)
-    doctor_detail = DoctorNameSerializer(source='doctor', read_only=True)
-    service_detail = DoctorServicesSerializer(source='doctor_ser', read_only=True)
+    reception_detail = ReceptionSerializer(source='reception', read_only=True)
+    patient_detail = PatientSerializer(source='patient', read_only=True)
+    doctor_detail = DoctorProfileSerializer(source='doctor', read_only=True)
     department_detail = DepartmentSerializer(source='department', read_only=True)
-    payment_type_detail = PaymentTypeNameSerializer(source='payment_type', read_only=True)
-
-    # ID FIELDS (write-only для создания)
-    patient = serializers.PrimaryKeyRelatedField(queryset=Patient.objects.all(), write_only=True)
-    doctor = serializers.PrimaryKeyRelatedField(queryset=Doctor.objects.all(), write_only=True)
-    doctor_ser = serializers.PrimaryKeyRelatedField(queryset=DoctorServices.objects.all(), write_only=True)
-    department = serializers.PrimaryKeyRelatedField(queryset=Department.objects.all(), write_only=True)
-    payment_type = serializers.PrimaryKeyRelatedField(queryset=Payment.objects.all(), write_only=True)
-
-    # Остальные поля
-    started_time = serializers.TimeField(format="%H:%M")
-    end_time = serializers.TimeField(format="%H:%M")
-    change = serializers.IntegerField(required=False)
-    phone_number = serializers.CharField()
+    service_detail = DoctorServicesSerializer(source='service', read_only=True)
+    doctor_ser = PriceDocSerializer(source='service', read_only=True)
 
     class Meta:
         model = CustomerRecord
-        fields = [
-            'patient', 'patient_detail',
-            'doctor', 'doctor_detail',
-            'doctor_ser', 'service_detail',
-            'department', 'department_detail',
-            'payment_type', 'payment_type_detail',
-            'change', 'phone_number',
-            'started_time', 'end_time', 'created_date'
-        ]
-        read_only_fields = ['created_date']
+        fields = ['reception_detail', 'patient_detail', 'doctor_detail', 'service_detail', 'department_detail', 'doctor_ser', 'change',
+                  'payment_type', 'created_date', 'phone_number']
 
 
 class CustRecordSerializer(serializers.ModelSerializer):
@@ -427,10 +443,10 @@ class PaymentInfoPatientSerializer(serializers.ModelSerializer):
     doctor = NameDoctorSerializer(read_only=True)  # Исправлено
     department = DepartmentSerializer(read_only=True)  # Исправлено
     doctor_service = Make2DoctorServicesSerializer(read_only=True)
-    patient_customer = CustomerRecordSerializer(read_only=True)
+    payment_customer = PaymentTypeNameSerializer(source='payment', read_only=True)
     class Meta:
         model = Patient
-        fields = ['full_name', 'doctor', 'appointment_date', 'department', 'doctor_service', 'patient_customer']
+        fields = ['full_name', 'doctor', 'appointment_date', 'department', 'doctor_service', 'payment_customer']
 
 
 class InfoPatientSerializer(serializers.ModelSerializer):

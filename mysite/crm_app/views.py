@@ -1,5 +1,6 @@
 from rest_framework import viewsets, generics, status
 from .serializers import *
+from rest_framework.views import APIView
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters
 from .filters import PatientFilter
@@ -186,3 +187,9 @@ class AnalyticsViewSet(viewsets.ModelViewSet):
     queryset = Analytics.objects.all()
     serializer_class = AnalyticsSerializer
 
+
+class PaymentInfoPatientSumAPIView(APIView):
+    def get(self, request):
+        data = Payment.get_count_sum()
+        serializer = PaymentTypeNameSumSerializer(data)
+        return Response(serializer.data)

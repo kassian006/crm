@@ -1,6 +1,17 @@
 from django.urls import path, include
 from rest_framework.routers import SimpleRouter, DefaultRouter
-from .views import *
+# from .views import PaymentInfoPatientSumAPIView
+from .views import (
+    UserProfileRegisterView, DoctorRegisterView, ReceptionRegisterView,
+    CustomLoginView, CustomAdminLoginView, LogoutView, UserProfileViewSet,
+    DepartmentViewSet, SpecialityViewSet, ReceptionViewSet, DoctorViewSet,
+    DoctorListViewSet, DoctorServicesViewSet, PatientViewSet,
+    MakeAppointmentInfoPatientAPIView, HistoryRecordInfoPatientViewSet,
+    HistoryReceptionInfoPatientViewSet, CalendarViewSet, PaymentInfoPatientViewSet,
+    InfoPatientViewSet, PaymentViewSet, CustomerRecordViewSet, CheckRecordListAPIView,
+    HistoryRecordViewSet, PriceListAPIView, PriceDetailAPIView, AnalyticsViewSet, PaymentInfoPatientSumAPIView
+)
+
 
 router = SimpleRouter()
 router.register(r'user_profile', UserProfileViewSet, basename='user_profile')
@@ -31,5 +42,6 @@ urlpatterns = [
     path('make_appointment_info_patient/', MakeAppointmentInfoPatientAPIView.as_view(), name='make_appointment_info_patient'),
     path('price_list/', PriceListAPIView.as_view(), name='price_list'),
     path('price_list/<int:pk>/', PriceDetailAPIView.as_view(), name='price_detail'),
+    path('sum/', PaymentInfoPatientSumAPIView.as_view(), name='payment-sum'),
 
 ]
