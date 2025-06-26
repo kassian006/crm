@@ -233,15 +233,10 @@ class PriceList(models.Model):
         return f'{self.department}, {self.service}'
 
 
-class Analytics(models.Model):
+class Report(models.Model):
+    doctor = models.ForeignKey(Doctor, related_name='doctor_report', on_delete=models.CASCADE)
     date = models.DateField(auto_now_add=True)
-    patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name='patient_analytics')
-    service = models.ForeignKey(DoctorServices, on_delete=models.CASCADE, related_name='service_analytics')
-
-    def __str__(self):
-        return f' {self.patient}, {self.service}'
-
-
-
-
+    patient = models.ForeignKey(Patient, related_name='patient_report', on_delete=models.CASCADE, db_index=True)
+    service = models.ForeignKey(DoctorServices, related_name='service_report', on_delete=models.CASCADE)
+    payment = models.ForeignKey(Payment, related_name='payment_report', on_delete=models.CASCADE)
 

@@ -18,7 +18,7 @@ router.register(r'payment', PaymentViewSet, basename='payment')
 router.register(r'customer_record', CustomerRecordViewSet, basename='customer_record')
 router.register(r'calendar_doctor', CalendarViewSet, basename='calendar_doctor')
 router.register(r'history_record', HistoryRecordViewSet, basename='history_record')
-router.register(r'analytic', AnalyticsViewSet, basename='analytic')
+router.register(r'report', ReportViewSet, basename='analytic')
 
 urlpatterns = [
     path('', include(router.urls)),

@@ -233,7 +233,7 @@ class Make2DoctorServicesSerializer(serializers.ModelSerializer):
 class PriceDocSerializer(serializers.ModelSerializer):
     class Meta:
         model = DoctorServices
-        fields = ['doctor_service', 'price']
+        fields = ['doctor_service', 'price', 'discount']
 
 
 # class MakeAppointmentInfoPatientSerializer(serializers.ModelSerializer):
@@ -455,14 +455,29 @@ class PriceDetailSerializer(serializers.ModelSerializer):
         fields = ['service']
 
 
-class AnalyticsSerializer(serializers.ModelSerializer):
+
+class ReportSerializer(serializers.ModelSerializer):
+    doctor_name = serializers.SerializerMethodField()
+    patient_name = serializers.CharField(source='patient.full_name', read_only=True)
+    service_name = serializers.CharField(source='service.doctor_service', read_only=True)
+    payment_type = serializers.CharField(source='payment.get_payment_type_display', read_only=True)
+    price = serializers.CharField(source='service.price', read_only=True)
+    discount = serializers.CharField(source='service.discount', read_only=True)
+    salary_doctor = serializers.CharField(source='service.salary_doctor', read_only=True)
+
     class Meta:
-        model = Analytics
-        fields = '__all__'
+        model = Report
+        fields = [
+            'id',
+            'date',
+            'doctor_name',
+            'patient_name',
+            'service_name',
+            'payment_type',
+            'price',
+            'discount',
+            'salary_doctor',
+        ]
 
-
-class Report(serializers.ModelSerializer):
-    class Meta:
-        model = CustomerRecord
-        fields = ['date', 'patient', 'service', 'payment_type', 'price', ]
-
+    def get_doctor_name(self, obj):
+        return f'{obj.doctor.first_name} {obj.doctor.last_name}'

@@ -2,9 +2,14 @@ from rest_framework import viewsets, generics, status
 from .serializers import *
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters
-from .filters import PatientFilter
+from .filters import PatientFilter, ReportFilter
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.response import Response
+from django.db.models import Sum, Q
+from rest_framework.viewsets import ReadOnlyModelViewSet
+from django_filters.rest_framework import DjangoFilterBackend
+from .models import Report
+from .serializers import ReportSerializer
 
 
 class UserProfileRegisterView(generics.CreateAPIView):
@@ -182,7 +187,25 @@ class PriceDetailAPIView(generics.RetrieveAPIView):
     serializer_class = PriceDetailSerializer
 
 
-class AnalyticsViewSet(viewsets.ModelViewSet):
-    queryset = Analytics.objects.all()
-    serializer_class = AnalyticsSerializer
 
+class ReportViewSet(ReadOnlyModelViewSet):
+    queryset = Report.objects.select_related('doctor', 'patient', 'service__department', 'payment')
+    serializer_class = ReportSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = ReportFilter
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())  # ВОТ ОНА — фильтрация
+        serializer = self.get_serializer(queryset, many=True)
+
+        total_sum = queryset.aggregate(sum=Sum('service__price'))['sum'] or 0
+        cash_sum = queryset.filter(payment__payment_type='cash').aggregate(sum=Sum('service__price'))['sum'] or 0
+        card_sum = queryset.filter(payment__payment_type='card').aggregate(sum=Sum('service__price'))['sum'] or 0
+
+        return Response({
+            'count': queryset.count(),
+            'total_sum': total_sum,
+            'cash_sum': cash_sum,
+            'card_sum': card_sum,
+            'results': serializer.data
+        })
