@@ -17,7 +17,7 @@ from .views import (
 router = SimpleRouter()
 router.register(r'user_profile', UserProfileViewSet, basename='user_profile')
 router.register(r'department', DepartmentViewSet, basename='department')
-router.register(r'speciali  ty', SpecialityViewSet, basename='speciality')
+router.register(r'speciality', SpecialityViewSet, basename='speciality')
 router.register(r'reception', ReceptionViewSet, basename='reception')
 router.register(r'doctor', DoctorViewSet, basename='doctor')
 router.register(r'doctor_list', DoctorListViewSet, basename='doctor_list')
@@ -36,15 +36,15 @@ urlpatterns = [
     path('login/admin/', CustomAdminLoginView.as_view(), name='admin-login'),
     path('logout/', LogoutView.as_view(), name='logout'),
     path('print_check/', CheckRecordListAPIView.as_view(), name='print_check'),
-    path('admin/make_appointment_info_patient/', MakeAppointmentInfoPatientAPIView.as_view(), name='make_appointment_info-patient'),
-    path('admin/price_list/', PriceListAPIView.as_view(), name='price_list'),
-    path('admin/price_list/<int:pk>/', PriceDetailAPIView.as_view(), name='price_detail'),
-    path('sum/', PaymentInfoPatientSumAPIView.as_view(), name='payment-sum'),
-    path('total_count/', HistoryReceptionInfoPatientDefAPIView.as_view(), name='payment-total_count'),
-    path('total_count_will/', HistoryRecordInfoPatientDefAPIView.as_view(), name='payment-total_count'),
-    path('admin/history_record_info/', HistoryRecordInfoPatientAPIView.as_view(), name='history_record-info'),
-    path('admin/history_reception_info/', HistoryReceptionInfoPatientAPIView.as_view(), name='history_reception-info'),
-    path('admin/payment_record_info/', PaymentInfoPatientAPIView.as_view(), name='payment_record-info'),
-    path('admin/patient_info/', InfoPatientAPIView.as_view(), name='patient-info'),
+    path('admins/make_appointment_info_patient/', MakeAppointmentInfoPatientAPIView.as_view(), name='make_appointment_info-patient'),
+    path('admins/price_list/', PriceListAPIView.as_view(), name='price_list'),
+    path('admins/price_list/<int:pk>/', PriceDetailAPIView.as_view(), name='price_detail'),
+    path('def/sum/', PaymentInfoPatientSumAPIView.as_view(), name='payment-sum'),
+    path('def/total_count/', HistoryReceptionInfoPatientDefAPIView.as_view(), name='payment-total_count'),
+    path('def/total_count_will/', HistoryRecordInfoPatientDefAPIView.as_view(), name='payment-total_count'),
+    path('admins/history_record_info/', HistoryRecordInfoPatientAPIView.as_view(), name='history_record-info'),
+    path('admins/history_reception_info/', HistoryReceptionInfoPatientAPIView.as_view(), name='history_reception-info'),
+    path('admins/payment_record_info/', PaymentInfoPatientAPIView.as_view(), name='payment_record-info'),
+    path('admins/patient_info/', InfoPatientAPIView.as_view(), name='patient-info'),
 
 ]
