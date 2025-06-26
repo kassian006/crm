@@ -6,10 +6,11 @@ from .views import (
     CustomLoginView, CustomAdminLoginView, LogoutView, UserProfileViewSet,
     DepartmentViewSet, SpecialityViewSet, ReceptionViewSet, DoctorViewSet,
     DoctorListViewSet, DoctorServicesViewSet, PatientViewSet,
-    MakeAppointmentInfoPatientAPIView, HistoryRecordInfoPatientViewSet,
-    HistoryReceptionInfoPatientViewSet, CalendarViewSet, PaymentInfoPatientViewSet,
-    InfoPatientViewSet, PaymentViewSet, CustomerRecordViewSet, CheckRecordListAPIView,
-    HistoryRecordViewSet, PriceListAPIView, PriceDetailAPIView, AnalyticsViewSet, PaymentInfoPatientSumAPIView
+    MakeAppointmentInfoPatientAPIView, HistoryRecordInfoPatientAPIView,
+    HistoryReceptionInfoPatientAPIView, CalendarViewSet, PaymentInfoPatientAPIView,
+    InfoPatientAPIView, PaymentViewSet, CustomerRecordViewSet, CheckRecordListAPIView,
+    HistoryRecordViewSet, PriceListAPIView, PriceDetailAPIView, AnalyticsViewSet, PaymentInfoPatientSumAPIView,
+    HistoryReceptionInfoPatientDefAPIView, HistoryRecordInfoPatientDefAPIView
 )
 
 
@@ -21,10 +22,6 @@ router.register(r'reception', ReceptionViewSet, basename='reception')
 router.register(r'doctor', DoctorViewSet, basename='doctor')
 router.register(r'doctor_list', DoctorListViewSet, basename='doctor_list')
 router.register(r'doctor_service', DoctorServicesViewSet, basename='doctor_service')
-router.register(r'history_record_info', HistoryRecordInfoPatientViewSet, basename='history_record_info')
-router.register(r'history_reception_info', HistoryReceptionInfoPatientViewSet, basename='history_reception_info')
-router.register(r'payment_record_info', PaymentInfoPatientViewSet, basename='payment_record_info')
-router.register(r'patient_info', InfoPatientViewSet, basename='patient_info')
 router.register(r'payment', PaymentViewSet, basename='payment')
 router.register(r'customer_record', CustomerRecordViewSet, basename='customer_record')
 router.register(r'calendar_doctor', CalendarViewSet, basename='calendar_doctor')
@@ -39,9 +36,15 @@ urlpatterns = [
     path('login/admin/', CustomAdminLoginView.as_view(), name='admin-login'),
     path('logout/', LogoutView.as_view(), name='logout'),
     path('print_check/', CheckRecordListAPIView.as_view(), name='print_check'),
-    path('make_appointment_info_patient/', MakeAppointmentInfoPatientAPIView.as_view(), name='make_appointment_info_patient'),
-    path('price_list/', PriceListAPIView.as_view(), name='price_list'),
-    path('price_list/<int:pk>/', PriceDetailAPIView.as_view(), name='price_detail'),
+    path('admin/make_appointment_info_patient/', MakeAppointmentInfoPatientAPIView.as_view(), name='make_appointment_info-patient'),
+    path('admin/price_list/', PriceListAPIView.as_view(), name='price_list'),
+    path('admin/price_list/<int:pk>/', PriceDetailAPIView.as_view(), name='price_detail'),
     path('sum/', PaymentInfoPatientSumAPIView.as_view(), name='payment-sum'),
+    path('total_count/', HistoryReceptionInfoPatientDefAPIView.as_view(), name='payment-total_count'),
+    path('total_count_will/', HistoryRecordInfoPatientDefAPIView.as_view(), name='payment-total_count'),
+    path('admin/history_record_info/', HistoryRecordInfoPatientAPIView.as_view(), name='history_record-info'),
+    path('admin/history_reception_info/', HistoryReceptionInfoPatientAPIView.as_view(), name='history_reception-info'),
+    path('admin/payment_record_info/', PaymentInfoPatientAPIView.as_view(), name='payment_record-info'),
+    path('admin/patient_info/', InfoPatientAPIView.as_view(), name='patient-info'),
 
 ]

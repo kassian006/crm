@@ -128,12 +128,12 @@ class MakeAppointmentInfoPatientAPIView(generics.ListCreateAPIView):
     serializer_class = MakeAppointmentInfoPatientSerializer
 
 
-class HistoryRecordInfoPatientViewSet(viewsets.ModelViewSet):
+class HistoryRecordInfoPatientAPIView(generics.ListAPIView):
     queryset = Patient.objects.all()
     serializer_class = HistoryRecordInfoPatientSerializer
 
 
-class HistoryReceptionInfoPatientViewSet(viewsets.ModelViewSet):
+class HistoryReceptionInfoPatientAPIView(generics.ListAPIView):
     queryset = Patient.objects.all()
     serializer_class = HistoryReceptionInfoPatientSerializer
 
@@ -144,11 +144,11 @@ class CalendarViewSet(viewsets.ModelViewSet):
     serializer_class = CalendarSerializer
 
 
-class PaymentInfoPatientViewSet(viewsets.ModelViewSet):
+class PaymentInfoPatientAPIView(generics.RetrieveUpdateAPIView):
     queryset = Patient.objects.all()
     serializer_class = PaymentInfoPatientSerializer
 
-class InfoPatientViewSet(viewsets.ModelViewSet):
+class InfoPatientAPIView(generics.ListAPIView):
     queryset = Patient.objects.all()
     serializer_class = InfoPatientSerializer
 
@@ -193,3 +193,13 @@ class PaymentInfoPatientSumAPIView(APIView):
         data = Payment.get_count_sum()
         serializer = PaymentTypeNameSumSerializer(data)
         return Response(serializer.data)
+
+
+class HistoryReceptionInfoPatientDefAPIView(generics.ListAPIView):
+    queryset = Patient.objects.all()
+    serializer_class = HistoryReceptionInfoPatientTotalSerializer
+
+
+class HistoryRecordInfoPatientDefAPIView(generics.ListAPIView):
+    queryset = Patient.objects.all()
+    serializer_class = HistoryRecordInfoPatientTotalSerializer

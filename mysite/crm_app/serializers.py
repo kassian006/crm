@@ -387,20 +387,6 @@ class HistoryReceptionInfoPatientTotalSerializer(serializers.ModelSerializer):
             return obj.get_count_reception()
 
 
-# class PaymentTypeNameSumSerializer(serializers.ModelSerializer):
-#     total = serializers.DecimalField(max_digits=10, decimal_places=2)
-#     cash = serializers.DecimalField(max_digits=10, decimal_places=2)
-#     card = serializers.DecimalField(max_digits=10, decimal_places=2)
-#     count_sum = serializers.SerializerMethodField()
-#
-#     class Meta:
-#         model = Payment
-#         fields = ['count_record']
-#
-#     def get_count_sum(self, obj):
-#         return obj.get_count_sum()
-
-
 class PaymentTypeNameSumSerializer(serializers.Serializer):
     total = serializers.DecimalField(max_digits=10, decimal_places=2)
     cash = serializers.DecimalField(max_digits=10, decimal_places=2)
