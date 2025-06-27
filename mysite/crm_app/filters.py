@@ -1,7 +1,8 @@
 import django_filters
-from django_filters import FilterSet, CharFilter, DateFilter
 from django import forms
 from .models import Patient, Report, Department, Doctor
+from django_filters import FilterSet, DateFilter, CharFilter
+
 
 
 class PatientFilter(FilterSet):
@@ -29,3 +30,21 @@ class ReportFilter(django_filters.FilterSet):
     class Meta:
         model = Report
         fields = ['doctor', 'department', 'date_from', 'date_to']
+
+
+class DoctorReportFilter(FilterSet):
+    date = DateFilter(
+        field_name='date',
+        lookup_expr='exact',
+        label='Дата отчёта',
+        widget=forms.DateInput(attrs={'type': 'date'})
+    )
+    doctor_name = CharFilter(
+        field_name='doctor__first_name',
+        lookup_expr='icontains',
+        label='Имя врача'
+    )
+
+    class Meta:
+        model = Report
+        fields = ['date', 'doctor_name']

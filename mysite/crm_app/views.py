@@ -4,7 +4,7 @@ from rest_framework.views import APIView
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter
 from rest_framework import filters
-from .filters import PatientFilter, ReportFilter
+from .filters import PatientFilter, ReportFilter, DoctorReportFilter
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.response import Response
 from django.db.models import Sum, Q
@@ -281,6 +281,9 @@ from rest_framework import status
 class ReportViewSet(ReadOnlyModelViewSet):
     queryset = Report.objects.select_related('doctor', 'patient', 'service__department', 'payment')
     serializer_class = ReportSerializer
+    filter_backends = [DjangoFilterBackend, OrderingFilter]
+    ordering_fields = ['record']
+    # filterset_class = ReportFilter
 
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -383,3 +386,10 @@ class ReportExportExcelView(APIView):
         response['Content-Disposition'] = 'attachment; filename=report.xlsx'
         workbook.save(response)
         return response
+
+class ReportDoctorsViewsSets(viewsets.ModelViewSet):
+    queryset = Report.objects.all()
+    serializer_class = ReportDoctorsSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = DoctorReportFilter
+

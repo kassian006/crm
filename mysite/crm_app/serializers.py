@@ -132,6 +132,12 @@ class DoctorServicePriceSerializer(serializers.ModelSerializer):
         fields = ['price']
 
 
+class DoctorSalarySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DoctorServices
+        fields = ['salary_doctor']
+
+
 class DoctorNameServicesSerializer(serializers.ModelSerializer):
     class Meta:
         model = DoctorServices
@@ -508,3 +514,68 @@ class ReportSerializer(serializers.ModelSerializer):
 
     def get_doctor_name(self, obj):
         return f"{obj.doctor.first_name} {obj.doctor.last_name}"
+
+
+class ReportDoctorsSerializer(serializers.ModelSerializer):
+    doctor_name = serializers.SerializerMethodField()
+    doctor_salary = DoctorSalarySerializer(source='service')
+
+
+    class Meta:
+        model = Report
+        fields = ['id', 'date', 'doctor_name', 'doctor_salary']
+
+    def get_doctor_name(self, obj):
+        return f"{obj.doctor.first_name} {obj.doctor.last_name}"
+
+
+from rest_framework.views import APIView
+from django.http import HttpResponse
+import openpyxl
+from django.db.models import Sum
+from .models import Report
+
+class ReportDoctorsExportExcelView(APIView):
+    def get(self, request):
+        reports = Report.objects.select_related('doctor', 'service', 'service__department').all()
+
+        # 💡 Ручная фильтрация (аналог DoctorReportFilter)
+        doctor_id = request.query_params.get('doctor')
+        if doctor_id:
+            reports = reports.filter(doctor_id=doctor_id)
+
+        date_from = request.query_params.get('date_from')
+        if date_from:
+            reports = reports.filter(date__gte=date_from)
+
+        date_to = request.query_params.get('date_to')
+        if date_to:
+            reports = reports.filter(date__lte=date_to)
+
+        # 📄 Создаём Excel
+        workbook = openpyxl.Workbook()
+        sheet = workbook.active
+        sheet.title = "Doctor Reports"
+
+        # 🧠 Заголовки
+        headers = ['ID', 'Дата', 'Врач', 'Оклад врача', 'Цена услуги', 'Отделение']
+        sheet.append(headers)
+
+        for report in reports:
+            row = [
+                report.id,
+                report.date.strftime('%Y-%m-%d'),
+                f"{report.doctor.first_name} {report.doctor.last_name}",
+                float(report.service.salary_doctor) if report.service else 0,
+                float(report.service.price) if report.service else 0,
+                report.service.department.department_name if report.service and report.service.department else '',
+            ]
+            sheet.append(row)
+
+        # 📦 Ответ
+        response = HttpResponse(
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = 'attachment; filename=doctor_report.xlsx'
+        workbook.save(response)
+        return response
