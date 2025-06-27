@@ -67,16 +67,11 @@ class DepartmentSerializer(serializers.ModelSerializer):
         model = Department
         fields = ['department_name']
 
-class DepartmentNameSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Department
-        fields = ['department_name']
-
 
 class SpecialitySerializer(serializers.ModelSerializer):
     class Meta:
         model = Speciality
-        fields = '__all__'
+        fields = ['speciality_title']
 
 
 class ReceptionSerializer(serializers.ModelSerializer):
@@ -101,17 +96,57 @@ class NameReceptionSerializer(serializers.ModelSerializer):
         fields = ['first_name', 'last_name']
 
 
-class DoctorSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Doctor
-        fields = ['first_name', 'last_name', 'email', 'phone_number', 'role']
-
-
 class DoctorListSerializer(serializers.ModelSerializer):
-    department_name = DepartmentNameSerializer(source='department', read_only=True)
+    department_name = DepartmentSerializer(source='department', read_only=True)
     class Meta:
         model = Doctor
         fields = ['id', 'first_name', 'last_name', 'cabinet', 'department_name', 'phone_number']
+
+
+class DoctorDetailSerializer(serializers.ModelSerializer):
+    department_name = DepartmentSerializer(source='department', read_only=True)
+    speciality = SpecialitySerializer()
+    class Meta:
+        model = Doctor
+        fields = ['image', 'first_name', 'last_name', 'email', 'phone_number', 'department_name', 'speciality', 'bonus']
+
+
+class DoctorCreateSerializer(serializers.ModelSerializer):
+    department_name = DepartmentSerializer(source='department', write_only=True)
+    speciality = SpecialitySerializer()
+
+    class Meta:
+        model = Doctor
+        fields = ['first_name', 'last_name', 'image', 'department_name', 'speciality', 'phone_number', 'email', 'bonus', 'cabinet']
+
+    def create(self, validated_data):
+        # Extract nested data
+        department_data = validated_data.pop('department', None)
+        speciality_data = validated_data.pop('speciality', None)
+
+        # Create or get Department instance
+        if department_data:
+            department, _ = Department.objects.get_or_create(
+                department_name=department_data['department_name']
+            )
+        else:
+            department = None
+
+        # Create or get Speciality instance
+        if speciality_data:
+            speciality, _ = Speciality.objects.get_or_create(
+                speciality_title=speciality_data['speciality_title']
+            )
+        else:
+            raise serializers.ValidationError({"speciality": "This field is required."})
+
+        # Create Doctor instance
+        doctor = Doctor.objects.create(
+            department=department,
+            speciality=speciality,
+            **validated_data
+        )
+        return doctor
 
 
 class DoctorNameSerializer(serializers.ModelSerializer):
@@ -488,7 +523,6 @@ class PriceDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = PriceList
         fields = ['service']
-
 
 
 class ReportSerializer(serializers.ModelSerializer):

@@ -11,7 +11,6 @@ router.register(r'department', DepartmentViewSet, basename='department')
 router.register(r'speciality', SpecialityViewSet, basename='speciality')
 router.register(r'reception', ReceptionViewSet, basename='reception')
 router.register(r'doctor', DoctorViewSet, basename='doctor')
-router.register(r'doctor_list', DoctorListViewSet, basename='doctor_list')
 router.register(r'doctor_service', DoctorServicesViewSet, basename='doctor_service')
 router.register(r'payment', PaymentViewSet, basename='payment')
 router.register(r'customer_record', CustomerRecordViewSet, basename='customer_record')
@@ -44,4 +43,7 @@ urlpatterns = [
     path('admins/patient_list/', PatientDesktopListAPIView.as_view(), name='patient-list'),
     path('admins/patient_list/<int:pk>/', PatientDesktopDetailAPIView.as_view(), name='patient-detail'),
     path('admins/patient/', PatientAPIView.as_view(), name='patient-lis'),
+    path('admins/doctor_list/', DoctorListAPIView.as_view(), name='doctor-list'),
+    path('admins/doctor_list/<int:pk>/', DoctorDetailAPIView.as_view(), name='doctor-detail'),
+    path('admins/doctor/create/', DoctorCreateAPIView.as_view(), name='doctor_create'),
 ]
