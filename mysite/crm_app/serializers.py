@@ -3,81 +3,19 @@ from rest_framework import serializers
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 
+class VerifyLoginCodeSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    code = serializers.CharField(max_length=6)  # если код 6-значный
+
+
+class SendLoginCodeSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+
 class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
         fields = '__all__'
-
-
-class UserProfileRegisterSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = UserProfile
-        fields = ['first_name', 'last_name', 'email', 'phone_number','password']
-        extra_kwargs={'password':{'write_only':True}}
-
-    def create(self, validated_data):
-        user=UserProfile.objects.create_user(**validated_data)
-        return user
-
-    def to_representation(self, instance):
-        refresh = RefreshToken.for_user(instance)
-        return {
-            'user': {
-                'email': instance.email,
-            },
-            'access': str(refresh.access_token),
-            'refresh': str(refresh)
-        }
-
-
-class ReceptionRegisterSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True)
-
-    class Meta:
-        model = Reception
-        fields = ['first_name', 'last_name', 'email', 'phone_number','password']
-
-    def create(self, validated_data):
-        validated_data['role'] = 'reception'
-        user = Reception.objects.create_user(**validated_data)
-        return user
-
-    def to_representation(self, instance):
-        refresh = RefreshToken.for_user(instance)
-        return {
-            'user': {
-                'email': instance.email,
-                'role': instance.role,
-            },
-            'access': str(refresh.access_token),
-            'refresh': str(refresh)
-        }
-
-
-class DoctorRegisterSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True)
-
-    class Meta:
-        model = Doctor
-        fields = ['first_name', 'last_name','speciality', 'medical_license', 'email', 'phone_number', 'password']
-        # ВНИМАНИЕ: department здесь нет, как ты просил 'phone_number',
-
-    def create(self, validated_data):
-        validated_data['role'] = 'doctor'
-        user = Doctor.objects.create_user(**validated_data)
-        return user
-
-    def to_representation(self, instance):
-        refresh = RefreshToken.for_user(instance)
-        return {
-            'user': {
-                'email': instance.email,
-                'role': instance.role,
-            },
-            'access': str(refresh.access_token),
-            'refresh': str(refresh)
-        }
-
 
 class LoginSerializers(serializers.Serializer):
     email = serializers.CharField()
@@ -119,7 +57,10 @@ class LogoutSerializer(serializers.Serializer):
         except Exception as e:
             raise serializers.ValidationError({'detail': 'Недействительный или уже отозванный токен'})
 
-
+class ResetPasswordSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    code = serializers.CharField(max_length=6)
+    new_password = serializers.CharField(write_only=True)
 
 class DepartmentSerializer(serializers.ModelSerializer):
     class Meta:
@@ -296,16 +237,13 @@ class MakeAppointmentInfoPatientSerializer(serializers.ModelSerializer):
 
 
 class CalendarSerializer(serializers.ModelSerializer):
-    doctor_name = serializers.CharField(source='doctor.first_name', read_only=True)
-    doctor_surname = serializers.CharField(source='doctor.last_name', read_only=True)
+    doctor = NameDoctorSerializer(read_only=True)
     department_name = serializers.CharField(source='department.department_name', read_only=True)
     service_label = serializers.CharField(source='doctor_service.service_label', read_only=True)
-    status_display = serializers.SerializerMethodField()
 
     class Meta:
         model = Patient
-        fields = ['full_name', 'started_time', 'end_time', 'appointment_date',
-            'status_display', 'doctor_name', 'doctor_surname', 'department_name', 'service_label']
+        fields = ['started_time', 'end_time', 'appointment_date', 'status_patient', 'doctor', 'department_name', 'service_label']
 
 
 class HistoryRecordInfoPatientSerializer(serializers.ModelSerializer):
@@ -314,16 +252,12 @@ class HistoryRecordInfoPatientSerializer(serializers.ModelSerializer):
     department = DepartmentSerializer(read_only=True)
     doctor_service = Make1DoctorServicesSerializer(read_only=True)
     patient_history = HistoryRecordInfoPatSerializer(read_only=True, many=True)
-    count_record = serializers.SerializerMethodField()
-    # count_record_history = serializers.SerializerMethodField()
 
     class Meta:
         model = Patient
         fields = ['full_name', 'reception', 'doctor', 'appointment_date', 'department',
-                  'doctor_service', 'patient_history', 'count_record']  # Убрано дублирование count_record, count_record_history
+                  'doctor_service', 'patient_history']  # Убрано дублирование count_record, count_record_history
 
-    def get_count_record(self, obj):
-        return obj.get_count_record()
 
     # def get_count_record_history(self, obj):
     #     return obj.get_count_record_history()
@@ -334,21 +268,19 @@ class HistoryReceptionInfoPatientSerializer(serializers.ModelSerializer):
     doctor = NameDoctorSerializer(read_only=True)  # Исправлено
     department = DepartmentSerializer(read_only=True)  # Исправлено
     doctor_service = Make1DoctorServicesSerializer(read_only=True)
-    record = HistoryRecordInfoPatSerializer(read_only=True)
-    count_record = serializers.SerializerMethodField()
+    # patient_history = HistoryRecordInfoPatSerializer(read_only=True, many=True)
+    patient_history_filtered = serializers.SerializerMethodField()  # Новое поле с фильтром
     appointment_date = serializers.DateField(format="%d.%m.%Y")
-
 
     class Meta:
         model = Patient
         fields = ['full_name', 'reception', 'doctor', 'appointment_date', 'department',
-                  'doctor_service', 'record', 'count_record']
+                  'doctor_service', 'patient_history_filtered']
 
-    def get_count_record(self, obj):
-            return obj.get_count_record()
+    def get_patient_history_filtered(self, obj):
+        filtered_history = obj.patient_history.filter(record='был в приеме')
+        return HistoryRecordInfoPatSerializer(filtered_history, many=True).data
 
-    # def get_count_record_history(self, obj):
-    #     return obj.get_count_record_history()
 
 class PatientNameSerializer(serializers.ModelSerializer):
     class Meta:
@@ -364,45 +296,53 @@ class PaymentSerializer(serializers.ModelSerializer):
         model = Payment
         fields = ['patient_detail', 'doctor_detail', 'service_detail', 'payment_type']
 
+
 class PaymentTypeNameSerializer(serializers.ModelSerializer):
     class Meta:
         model = Payment
         fields = ['payment_type']
 
 
+class HistoryRecordInfoPatientTotalSerializer(serializers.ModelSerializer):
+    count_record = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Patient
+        fields = ['count_record']
+
+    def get_count_record(self, obj):
+            return obj.get_count_record()
+
+
+class HistoryReceptionInfoPatientTotalSerializer(serializers.ModelSerializer):
+    count_reception = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Patient
+        fields = ['count_reception']
+
+    def get_count_reception(self, obj):
+            return obj.get_count_reception()
+
+
+class PaymentTypeNameSumSerializer(serializers.Serializer):
+    total = serializers.DecimalField(max_digits=10, decimal_places=2)
+    cash = serializers.DecimalField(max_digits=10, decimal_places=2)
+    card = serializers.DecimalField(max_digits=10, decimal_places=2)
+
+
 class CustomerRecordSerializer(serializers.ModelSerializer):
-    # DETAIL FIELDS (только read-only для отображения)
-    patient_detail = PatientNameSerializer(source='patient', read_only=True)
-    doctor_detail = DoctorNameSerializer(source='doctor', read_only=True)
-    service_detail = DoctorServicesSerializer(source='doctor_ser', read_only=True)
+    reception_detail = ReceptionSerializer(source='reception', read_only=True)
+    patient_detail = PatientSerializer(source='patient', read_only=True)
+    doctor_detail = DoctorProfileSerializer(source='doctor', read_only=True)
     department_detail = DepartmentSerializer(source='department', read_only=True)
-    payment_type_detail = PaymentTypeNameSerializer(source='payment_type', read_only=True)
-
-    # ID FIELDS (write-only для создания)
-    patient = serializers.PrimaryKeyRelatedField(queryset=Patient.objects.all(), write_only=True)
-    doctor = serializers.PrimaryKeyRelatedField(queryset=Doctor.objects.all(), write_only=True)
-    doctor_ser = serializers.PrimaryKeyRelatedField(queryset=DoctorServices.objects.all(), write_only=True)
-    department = serializers.PrimaryKeyRelatedField(queryset=Department.objects.all(), write_only=True)
-    payment_type = serializers.PrimaryKeyRelatedField(queryset=Payment.objects.all(), write_only=True)
-
-    # Остальные поля
-    started_time = serializers.TimeField(format="%H:%M")
-    end_time = serializers.TimeField(format="%H:%M")
-    change = serializers.IntegerField(required=False)
-    phone_number = serializers.CharField()
+    service_detail = DoctorServicesSerializer(source='service', read_only=True)
+    doctor_ser = PriceDocSerializer(source='service', read_only=True)
 
     class Meta:
         model = CustomerRecord
-        fields = [
-            'patient', 'patient_detail',
-            'doctor', 'doctor_detail',
-            'doctor_ser', 'service_detail',
-            'department', 'department_detail',
-            'payment_type', 'payment_type_detail',
-            'change', 'phone_number',
-            'started_time', 'end_time', 'created_date'
-        ]
-        read_only_fields = ['created_date']
+        fields = ['reception_detail', 'patient_detail', 'doctor_detail', 'service_detail', 'department_detail', 'doctor_ser', 'change',
+                  'payment_type', 'created_date', 'phone_number']
 
 
 class CustRecordSerializer(serializers.ModelSerializer):
@@ -427,10 +367,10 @@ class PaymentInfoPatientSerializer(serializers.ModelSerializer):
     doctor = NameDoctorSerializer(read_only=True)  # Исправлено
     department = DepartmentSerializer(read_only=True)  # Исправлено
     doctor_service = Make2DoctorServicesSerializer(read_only=True)
-    patient_customer = CustomerRecordSerializer(read_only=True)
+    payment_customer = PaymentTypeNameSerializer(source='payment', read_only=True)
     class Meta:
         model = Patient
-        fields = ['full_name', 'doctor', 'appointment_date', 'department', 'doctor_service', 'patient_customer']
+        fields = ['full_name', 'doctor', 'appointment_date', 'department', 'doctor_service', 'payment_customer']
 
 
 class InfoPatientSerializer(serializers.ModelSerializer):
@@ -460,10 +400,9 @@ class ReportSerializer(serializers.ModelSerializer):
     doctor_name = serializers.SerializerMethodField()
     patient_name = serializers.CharField(source='patient.full_name', read_only=True)
     service_name = serializers.CharField(source='service.doctor_service', read_only=True)
+    department_name = serializers.CharField(source='service.department.department_name', read_only=True)
     payment_type = serializers.CharField(source='payment.get_payment_type_display', read_only=True)
-    price = serializers.CharField(source='service.price', read_only=True)
-    discount = serializers.CharField(source='service.discount', read_only=True)
-    salary_doctor = serializers.CharField(source='service.salary_doctor', read_only=True)
+    service_price = serializers.DecimalField(source='service.price', max_digits=10, decimal_places=2, read_only=True)
 
     class Meta:
         model = Report
@@ -473,11 +412,10 @@ class ReportSerializer(serializers.ModelSerializer):
             'doctor_name',
             'patient_name',
             'service_name',
+            'department_name',
             'payment_type',
-            'price',
-            'discount',
-            'salary_doctor',
+            'service_price',
         ]
 
     def get_doctor_name(self, obj):
-        return f'{obj.doctor.first_name} {obj.doctor.last_name}'
+        return f"{obj.doctor.first_name} {obj.doctor.last_name}"

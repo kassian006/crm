@@ -1,5 +1,6 @@
 from rest_framework import viewsets, generics, status
 from .serializers import *
+from rest_framework.views import APIView
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters
 from .filters import PatientFilter, ReportFilter
@@ -7,27 +8,101 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.response import Response
 from django.db.models import Sum, Q
 from rest_framework.viewsets import ReadOnlyModelViewSet
-from django_filters.rest_framework import DjangoFilterBackend
 from .models import Report
 from .serializers import ReportSerializer
+from .models import EmailLoginCode
+from .serializers import SendLoginCodeSerializer
+from rest_framework.decorators import api_view
+from django.contrib.auth import authenticate, login
+from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST
+import random
+from django.core.mail import send_mail
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework import status
+from .models import EmailLoginCode
+from .serializers import SendLoginCodeSerializer, VerifyLoginCodeSerializer
+from django.utils import timezone
+from django_filters.rest_framework import DjangoFilterBackend
+import io
+from django.http import HttpResponse
+import pandas as pd
+import openpyxl
+from rest_framework.filters import OrderingFilter, SearchFilter
 
 
-class UserProfileRegisterView(generics.CreateAPIView):
-    serializer_class = UserProfileRegisterSerializer
+@api_view(['POST'])
+def send_login_code_view(request):
+    serializer = SendLoginCodeSerializer(data=request.data)
+    if serializer.is_valid():
+        email = serializer.validated_data['email']
+        code = str(random.randint(100000, 999999))
 
-    def create(self, request, *args, **kwargs):
-        serializer=self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        user=serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        # Сохраняем в БД
+        EmailLoginCode.objects.create(email=email, code=code)
+
+        # Отправляем на почту
+        send_mail(
+            'Код для сброса пароля',
+            f'Ваш код для сброса пароля: {code}',
+            'noreply@example.com',  # может быть EMAIL_HOST_USER
+            [email],
+            fail_silently=False,
+        )
+
+        return Response({'message': 'Код отправлен на почту'}, status=status.HTTP_200_OK)
+
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class DoctorRegisterView(generics.CreateAPIView):
-    serializer_class = DoctorRegisterSerializer
+@api_view(['POST'])
+def verify_login_code(request):
+    serializer = VerifyLoginCodeSerializer(data=request.data)
+    if serializer.is_valid():
+        email = serializer.validated_data['email']
+        code = serializer.validated_data['code']
+
+        try:
+            login_code = EmailLoginCode.objects.filter(email=email, code=code).latest('created_at')
+        except EmailLoginCode.DoesNotExist:
+            return Response({'error': 'Неверный код'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if not login_code.is_valid():
+            return Response({'error': 'Код устарел'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Если код валидный — можно теперь попросить ввести новый пароль (или сразу поменять)
+        return Response({'message': 'Код подтвержден. Введите новый пароль.'}, status=status.HTTP_200_OK)
+
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class ReceptionRegisterView(generics.CreateAPIView):
-    serializer_class = ReceptionRegisterSerializer
+@api_view(['POST'])
+def reset_password_view(request):
+    serializer = ResetPasswordSerializer(data=request.data)
+    if serializer.is_valid():
+        email = serializer.validated_data['email']
+        code = serializer.validated_data['code']
+        new_password = serializer.validated_data['new_password']
+
+        try:
+            login_code = EmailLoginCode.objects.filter(email=email, code=code).latest('created_at')
+        except EmailLoginCode.DoesNotExist:
+            return Response({'error': 'Неверный код'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if not login_code.is_valid():
+            return Response({'error': 'Код устарел'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user = UserProfile.objects.get(email=email)
+        except UserProfile.DoesNotExist:
+            return Response({'error': 'Пользователь не найден'}, status=status.HTTP_404_NOT_FOUND)
+
+        user.set_password(new_password)
+        user.save()
+
+        return Response({'message': 'Пароль успешно обновлён'}, status=status.HTTP_200_OK)
+
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class CustomLoginView(TokenObtainPairView):
@@ -132,12 +207,12 @@ class MakeAppointmentInfoPatientAPIView(generics.ListCreateAPIView):
     serializer_class = MakeAppointmentInfoPatientSerializer
 
 
-class HistoryRecordInfoPatientViewSet(viewsets.ModelViewSet):
+class HistoryRecordInfoPatientAPIView(generics.ListAPIView):
     queryset = Patient.objects.all()
     serializer_class = HistoryRecordInfoPatientSerializer
 
 
-class HistoryReceptionInfoPatientViewSet(viewsets.ModelViewSet):
+class HistoryReceptionInfoPatientAPIView(generics.ListAPIView):
     queryset = Patient.objects.all()
     serializer_class = HistoryReceptionInfoPatientSerializer
 
@@ -148,11 +223,11 @@ class CalendarViewSet(viewsets.ModelViewSet):
     serializer_class = CalendarSerializer
 
 
-class PaymentInfoPatientViewSet(viewsets.ModelViewSet):
+class PaymentInfoPatientAPIView(generics.RetrieveUpdateAPIView):
     queryset = Patient.objects.all()
     serializer_class = PaymentInfoPatientSerializer
 
-class InfoPatientViewSet(viewsets.ModelViewSet):
+class InfoPatientAPIView(generics.ListAPIView):
     queryset = Patient.objects.all()
     serializer_class = InfoPatientSerializer
 
@@ -187,25 +262,113 @@ class PriceDetailAPIView(generics.RetrieveAPIView):
     serializer_class = PriceDetailSerializer
 
 
+from django.db.models import Sum
+from rest_framework.viewsets import ReadOnlyModelViewSet
+from rest_framework.response import Response
+from rest_framework import status
 
 class ReportViewSet(ReadOnlyModelViewSet):
     queryset = Report.objects.select_related('doctor', 'patient', 'service__department', 'payment')
     serializer_class = ReportSerializer
-    filter_backends = [DjangoFilterBackend]
-    filterset_class = ReportFilter
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        request = self.request
+
+        # 👨‍⚕️ Фильтр по врачу
+        doctor_id = request.query_params.get('doctor')
+        if doctor_id:
+            queryset = queryset.filter(doctor_id=doctor_id)
+
+        # 🏥 Фильтр по отделению (через service)
+        department_id = request.query_params.get('department')
+        if department_id:
+            queryset = queryset.filter(service__department_id=department_id)
+
+        # 📅 Фильтр по дате (от и до)
+        date_from = request.query_params.get('date_from')
+        if date_from:
+            queryset = queryset.filter(date__gte=date_from)
+
+        date_to = request.query_params.get('date_to')
+        if date_to:
+            queryset = queryset.filter(date__lte=date_to)
+
+        return queryset
 
     def list(self, request, *args, **kwargs):
-        queryset = self.filter_queryset(self.get_queryset())  # ВОТ ОНА — фильтрация
-        serializer = self.get_serializer(queryset, many=True)
+        queryset = self.get_queryset()
 
+        # Подсчёты
         total_sum = queryset.aggregate(sum=Sum('service__price'))['sum'] or 0
         cash_sum = queryset.filter(payment__payment_type='cash').aggregate(sum=Sum('service__price'))['sum'] or 0
         card_sum = queryset.filter(payment__payment_type='card').aggregate(sum=Sum('service__price'))['sum'] or 0
 
+        # Пагинация
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            paginated_data = self.get_paginated_response(serializer.data).data
+            return Response({
+                **paginated_data,
+                'total_sum': total_sum,
+                'cash_sum': cash_sum,
+                'card_sum': card_sum,
+            })
+
+        serializer = self.get_serializer(queryset, many=True)
         return Response({
             'count': queryset.count(),
             'total_sum': total_sum,
             'cash_sum': cash_sum,
             'card_sum': card_sum,
             'results': serializer.data
-        })
+        }, status=status.HTTP_200_OK)
+
+
+class PaymentInfoPatientSumAPIView(APIView):
+    def get(self, request):
+        data = Payment.get_count_sum()
+        serializer = PaymentTypeNameSumSerializer(data)
+        return Response(serializer.data)
+
+
+class HistoryReceptionInfoPatientDefAPIView(generics.ListAPIView):
+    queryset = Patient.objects.all()
+    serializer_class = HistoryReceptionInfoPatientTotalSerializer
+
+
+class HistoryRecordInfoPatientDefAPIView(generics.ListAPIView):
+    queryset = Patient.objects.all()
+    serializer_class = HistoryRecordInfoPatientTotalSerializer
+
+
+
+class ReportExportExcelView(APIView):
+    def get(self, request):
+        reports = Report.objects.select_related('doctor', 'patient', 'service', 'payment').all()
+
+        workbook = openpyxl.Workbook()
+        sheet = workbook.active
+        sheet.title = "Reports"
+
+        headers = ['ID', 'Date', 'Doctor', 'Patient', 'Service', 'Department', 'Payment Type', 'Price']
+        sheet.append(headers)
+
+        for report in reports:
+            row = [
+                report.id,
+                report.date.strftime('%Y-%m-%d'),
+                f"{report.doctor.first_name} {report.doctor.last_name}",
+                report.patient.full_name,
+                report.service.doctor_service,
+                report.service.department.department_name,
+                report.payment.get_payment_type_display(),
+                float(report.service.price)
+            ]
+            sheet.append(row)
+
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = 'attachment; filename=report.xlsx'
+        workbook.save(response)
+        return response

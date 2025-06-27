@@ -1,6 +1,6 @@
 import django_filters
 from django import forms
-from .models import Patient, Report
+from .models import Patient, Report, Department, Doctor
 
 class PatientFilter(django_filters.FilterSet):
     created_date = django_filters.DateFilter(
@@ -17,8 +17,8 @@ class PatientFilter(django_filters.FilterSet):
 class ReportFilter(django_filters.FilterSet):
     date_from = django_filters.DateFilter(field_name="date", lookup_expr='gte')
     date_to = django_filters.DateFilter(field_name="date", lookup_expr='lte')
-    doctor = django_filters.NumberFilter(field_name="doctor__id")
-    department = django_filters.NumberFilter(field_name="service__department__id")
+    doctor = django_filters.NumberFilter(field_name="doctor_id")
+    department = django_filters.NumberFilter(field_name="service__department_id")
 
     class Meta:
         model = Report
