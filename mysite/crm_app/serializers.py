@@ -2,6 +2,11 @@ from .models import *
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
+from rest_framework.views import APIView
+from django.http import HttpResponse
+import openpyxl
+from django.db.models import Sum
+from .models import Report
 
 class VerifyLoginCodeSerializer(serializers.Serializer):
     email = serializers.EmailField()
@@ -11,11 +16,6 @@ class VerifyLoginCodeSerializer(serializers.Serializer):
 class SendLoginCodeSerializer(serializers.Serializer):
     email = serializers.EmailField()
 
-
-class UserProfileSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = UserProfile
-        fields = '__all__'
 
 class LoginSerializers(serializers.Serializer):
     email = serializers.CharField()
@@ -178,11 +178,6 @@ class DoctorNameServicesSerializer(serializers.ModelSerializer):
         model = DoctorServices
         fields = ['doctor_service']
 
-class PriceDocSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = DoctorServices
-        fields = ['doctor_service', 'price']
-
 
 class NameDoctorSerializer(serializers.ModelSerializer):
     class Meta:
@@ -194,12 +189,6 @@ class HistoryRecordInfoPatSerializer(serializers.ModelSerializer):
     class Meta:
         model = HistoryRecord
         fields = ['record']
-
-
-class HistoryRecordSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = HistoryRecord
-        fields = '__all__'
 
 
 class PatientSerializer(serializers.ModelSerializer):
@@ -316,10 +305,10 @@ class PriceDocSerializer(serializers.ModelSerializer):
 #         fields = ['full_name', 'reception', 'doctor', 'started_time', 'end_time', 'status_patient', 'department', 'doctor_service']
 
 class MakeAppointmentInfoPatientSerializer(serializers.ModelSerializer):
-    reception = NameReceptionSerializer(read_only=True)
-    doctor = NameDoctorSerializer(read_only=True)
-    department = DepartmentSerializer(read_only=True)
-    doctor_service = MakeDoctorServicesSerializer(read_only=True)
+    reception = NameReceptionSerializer(write_only=True)
+    doctor = NameDoctorSerializer(write_only=True)
+    department = DepartmentSerializer(write_only=True)
+    doctor_service = MakeDoctorServicesSerializer(write_only=True)
     birthday = serializers.DateField(format="%d.%m.%Y", input_formats=['%d.%m.%Y', '%Y-%m-%d'])
 
     class Meta:
@@ -573,12 +562,6 @@ class ReportDoctorsSerializer(serializers.ModelSerializer):
     def get_doctor_name(self, obj):
         return f"{obj.doctor.first_name} {obj.doctor.last_name}"
 
-
-from rest_framework.views import APIView
-from django.http import HttpResponse
-import openpyxl
-from django.db.models import Sum
-from .models import Report
 
 class ReportDoctorsExportExcelView(APIView):
     def get(self, request):
