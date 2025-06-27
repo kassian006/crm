@@ -16,7 +16,6 @@ router.register(r'payment', PaymentViewSet, basename='payment')
 router.register(r'customer_record', CustomerRecordViewSet, basename='customer_record')
 router.register(r'calendar_doctor', CalendarViewSet, basename='calendar_doctor')
 router.register(r'history_record', HistoryRecordViewSet, basename='history_record')
-router.register(r'report', ReportViewSet, basename='report')
 router.register(r'report_doctors', ReportDoctorsViewsSets, basename='report_doctors')
 
 urlpatterns = [
@@ -46,4 +45,7 @@ urlpatterns = [
     path('admins/doctor_list/', DoctorListAPIView.as_view(), name='doctor-list'),
     path('admins/doctor_list/<int:pk>/', DoctorDetailAPIView.as_view(), name='doctor-detail'),
     path('admins/doctor/create/', DoctorCreateAPIView.as_view(), name='doctor_create'),
+    path('summary_report/', SummaryReportView.as_view(), name='summary-report'),
+    path('summary_report_export_excel/', SummaryReportExportExcelView.as_view(), name='summary-report-export'),
+    path('report_list/', ReportListAPIView.as_view(), name='report-list-api'),
 ]

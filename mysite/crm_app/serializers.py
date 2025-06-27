@@ -2,6 +2,11 @@ from .models import *
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
+from rest_framework.views import APIView
+from django.http import HttpResponse
+import openpyxl
+from django.db.models import Sum
+from .models import Report
 
 class VerifyLoginCodeSerializer(serializers.Serializer):
     email = serializers.EmailField()
@@ -562,12 +567,6 @@ class ReportDoctorsSerializer(serializers.ModelSerializer):
     def get_doctor_name(self, obj):
         return f"{obj.doctor.first_name} {obj.doctor.last_name}"
 
-
-from rest_framework.views import APIView
-from django.http import HttpResponse
-import openpyxl
-from django.db.models import Sum
-from .models import Report
 
 class ReportDoctorsExportExcelView(APIView):
     def get(self, request):

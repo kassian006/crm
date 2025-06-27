@@ -48,3 +48,10 @@ class DoctorReportFilter(FilterSet):
     class Meta:
         model = Report
         fields = ['date', 'doctor_name']
+
+class AllReportFilter(FilterSet):
+    class Meta:
+        model = Report
+        fields = {
+            'date': ['gt', 'lt'],
+        }

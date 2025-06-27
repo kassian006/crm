@@ -4,7 +4,7 @@ from rest_framework.views import APIView
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter
 from rest_framework import filters
-from .filters import PatientFilter, ReportFilter, DoctorReportFilter
+from .filters import PatientFilter, ReportFilter, DoctorReportFilter, AllReportFilter
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.response import Response
 from django.db.models import Sum, Q
@@ -12,7 +12,6 @@ from rest_framework.viewsets import ReadOnlyModelViewSet
 from .models import Report
 from .serializers import ReportSerializer
 from .models import EmailLoginCode
-from .serializers import SendLoginCodeSerializer
 from rest_framework.decorators import api_view
 from django.contrib.auth import authenticate, login
 from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST
@@ -30,6 +29,17 @@ from django.http import HttpResponse
 import pandas as pd
 import openpyxl
 from rest_framework.filters import OrderingFilter, SearchFilter
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from django.db.models import Sum, F
+from .models import Report
+from django.utils.dateparse import parse_date
+from django.db.models import Q
+from openpyxl import Workbook
+from django.db.models import Sum
+from rest_framework.viewsets import ReadOnlyModelViewSet
+from rest_framework.response import Response
+from rest_framework import status
 
 
 @api_view(['POST'])
@@ -295,64 +305,48 @@ class PriceDetailAPIView(generics.RetrieveAPIView):
     serializer_class = PriceDetailSerializer
 
 
-from django.db.models import Sum
-from rest_framework.viewsets import ReadOnlyModelViewSet
-from rest_framework.response import Response
-from rest_framework import status
+class ReportListAPIView(APIView):
+    def get(self, request):
+        queryset = Report.objects.select_related('doctor', 'patient', 'service__department', 'payment')
 
-class ReportViewSet(ReadOnlyModelViewSet):
-    queryset = Report.objects.select_related('doctor', 'patient', 'service__department', 'payment')
-    serializer_class = ReportSerializer
-    filter_backends = [DjangoFilterBackend, OrderingFilter]
-    ordering_fields = ['record']
-    # filterset_class = ReportFilter
-
-    def get_queryset(self):
-        queryset = super().get_queryset()
-        request = self.request
+        # 🔍 Поиск
+        search = request.GET.get('search')
+        if search:
+            queryset = queryset.filter(
+                Q(doctor__first_name__icontains=search) |
+                Q(doctor__last_name__icontains=search) |
+                Q(patient__full_name__icontains=search) |
+                Q(service__doctor_service__icontains=search) |
+                Q(service__department__department_name__icontains=search)
+            )
 
         # 👨‍⚕️ Фильтр по врачу
-        doctor_id = request.query_params.get('doctor')
+        doctor_id = request.GET.get('doctor')
         if doctor_id:
             queryset = queryset.filter(doctor_id=doctor_id)
 
-        # 🏥 Фильтр по отделению (через service)
-        department_id = request.query_params.get('department')
+        # 🏥 Фильтр по отделению
+        department_id = request.GET.get('department')
         if department_id:
             queryset = queryset.filter(service__department_id=department_id)
 
-        # 📅 Фильтр по дате (от и до)
-        date_from = request.query_params.get('date_from')
+        # 📅 Фильтр по датам
+        date_from = request.GET.get('date_from')
         if date_from:
             queryset = queryset.filter(date__gte=date_from)
 
-        date_to = request.query_params.get('date_to')
+        date_to = request.GET.get('date_to')
         if date_to:
             queryset = queryset.filter(date__lte=date_to)
 
-        return queryset
-
-    def list(self, request, *args, **kwargs):
-        queryset = self.get_queryset()
-
-        # Подсчёты
+        # 💰 Подсчёты
         total_sum = queryset.aggregate(sum=Sum('service__price'))['sum'] or 0
         cash_sum = queryset.filter(payment__payment_type='cash').aggregate(sum=Sum('service__price'))['sum'] or 0
         card_sum = queryset.filter(payment__payment_type='card').aggregate(sum=Sum('service__price'))['sum'] or 0
 
-        # Пагинация
-        page = self.paginate_queryset(queryset)
-        if page is not None:
-            serializer = self.get_serializer(page, many=True)
-            paginated_data = self.get_paginated_response(serializer.data).data
-            return Response({
-                **paginated_data,
-                'total_sum': total_sum,
-                'cash_sum': cash_sum,
-                'card_sum': card_sum,
-            })
+        # ⚙️ Сериализация
+        serializer = ReportSerializer(queryset, many=True)
 
-        serializer = self.get_serializer(queryset, many=True)
         return Response({
             'count': queryset.count(),
             'total_sum': total_sum,
@@ -377,7 +371,6 @@ class HistoryReceptionInfoPatientDefAPIView(generics.ListAPIView):
 class HistoryRecordInfoPatientDefAPIView(generics.ListAPIView):
     queryset = Patient.objects.all()
     serializer_class = HistoryRecordInfoPatientTotalSerializer
-
 
 
 class ReportExportExcelView(APIView):
@@ -409,9 +402,110 @@ class ReportExportExcelView(APIView):
         workbook.save(response)
         return response
 
+
 class ReportDoctorsViewsSets(viewsets.ModelViewSet):
     queryset = Report.objects.all()
     serializer_class = ReportDoctorsSerializer
-    filter_backends = [DjangoFilterBackend]
+    filter_backends = [DjangoFilterBackend, SearchFilter]
     filterset_class = DoctorReportFilter
 
+
+class SummaryReportView(APIView):
+    def get(self, request):
+        reports = Report.objects.select_related('payment', 'service', 'doctor', 'patient', 'service__department')
+
+        # 🔎 Search-поиск
+        search = request.GET.get('search')
+        if search:
+            reports = reports.filter(
+                Q(doctor__first_name__icontains=search) |
+                Q(doctor__last_name__icontains=search) |
+                Q(patient__full_name__icontains=search) |
+                Q(service__doctor_service__icontains=search) |
+                Q(service__department__department_name__icontains=search)
+            )
+
+        # 🧪 Применим фильтр дат (AllReportFilter)
+        filterset = AllReportFilter(request.GET, queryset=reports)
+        if filterset.is_valid():
+            reports = filterset.qs
+        else:
+            return Response(filterset.errors, status=400)
+
+        # 📊 Подсчёты
+        total_services = reports.aggregate(sum=Sum('service__price'))['sum'] or 0
+        cash_total = reports.filter(payment__payment_type='cash').aggregate(sum=Sum('service__price'))['sum'] or 0
+        card_total = reports.filter(payment__payment_type='card').aggregate(sum=Sum('service__price'))['sum'] or 0
+        doctor_salary_total = reports.aggregate(sum=Sum('service__salary_doctor'))['sum'] or 0
+        doctor_salary_cash = reports.filter(payment__payment_type='cash').aggregate(sum=Sum('service__salary_doctor'))['sum'] or 0
+        doctor_salary_card = reports.filter(payment__payment_type='card').aggregate(sum=Sum('service__salary_doctor'))['sum'] or 0
+        clinic_cash = cash_total - doctor_salary_cash
+        clinic_card = card_total - doctor_salary_card
+
+        return Response({
+            "cash_paid": cash_total,
+            "card_paid": card_total,
+            "total_services": total_services,
+            "doctor_salary_total": doctor_salary_total,
+            "doctor_salary_cash": doctor_salary_cash,
+            "doctor_salary_card": doctor_salary_card,
+            "clinic_cash": clinic_cash,
+            "clinic_card": clinic_card,
+        })
+
+
+class SummaryReportExportExcelView(APIView):
+    def get(self, request):
+        reports = Report.objects.select_related('payment', 'service', 'doctor', 'patient', 'service__department')
+
+        # 🔍 Фильтр по поиску
+        search = request.GET.get('search')
+        if search:
+            reports = reports.filter(
+                Q(doctor__first_name__icontains=search) |
+                Q(doctor__last_name__icontains=search) |
+                Q(patient__full_name__icontains=search) |
+                Q(service__doctor_service__icontains=search) |
+                Q(service__department__department_name__icontains=search)
+            )
+
+        # 📅 Фильтр по датам
+        filterset = AllReportFilter(request.GET, queryset=reports)
+        if filterset.is_valid():
+            reports = filterset.qs
+        else:
+            return Response(filterset.errors, status=400)
+
+        # 📊 Подсчёты
+        total_services = reports.aggregate(sum=Sum('service__price'))['sum'] or 0
+        cash_total = reports.filter(payment__payment_type='cash').aggregate(sum=Sum('service__price'))['sum'] or 0
+        card_total = reports.filter(payment__payment_type='card').aggregate(sum=Sum('service__price'))['sum'] or 0
+        doctor_salary_total = reports.aggregate(sum=Sum('service__salary_doctor'))['sum'] or 0
+        doctor_salary_cash = reports.filter(payment__payment_type='cash').aggregate(sum=Sum('service__salary_doctor'))['sum'] or 0
+        doctor_salary_card = reports.filter(payment__payment_type='card').aggregate(sum=Sum('service__salary_doctor'))['sum'] or 0
+        clinic_cash = cash_total - doctor_salary_cash
+        clinic_card = card_total - doctor_salary_card
+
+        # 📁 Создаём Excel
+        workbook = Workbook()
+        sheet = workbook.active
+        sheet.title = "Summary Report"
+
+        sheet.append([
+            'Total Services', 'Cash Paid', 'Card Paid',
+            'Doctor Salary (Total)', 'Doctor Salary (Cash)', 'Doctor Salary (Card)',
+            'Clinic (Cash)', 'Clinic (Card)'
+        ])
+
+        sheet.append([
+            total_services, cash_total, card_total,
+            doctor_salary_total, doctor_salary_cash, doctor_salary_card,
+            clinic_cash, clinic_card
+        ])
+
+        response = HttpResponse(
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = 'attachment; filename=summary_report.xlsx'
+        workbook.save(response)
+        return response

@@ -9,16 +9,19 @@ django.setup()
 
 from crm_app.models import (
     UserProfile, Doctor, Reception, Department, Speciality, DoctorServices,
-    Patient, Payment, CustomerRecord, HistoryRecord, PriceList, Analytics
+    Patient, Payment, CustomerRecord, HistoryRecord, PriceList, Report
 )
 
 fake = Faker('ru_RU')
 
+
 def create_departments(n=3):
     return [Department.objects.create(department_name=fake.job()) for _ in range(n)]
 
+
 def create_specialities(n=3):
     return [Speciality.objects.create(speciality_title=fake.catch_phrase()) for _ in range(n)]
+
 
 def create_receptions(specialities, n=2):
     receptions = []
@@ -32,18 +35,15 @@ def create_receptions(specialities, n=2):
             role='Reception',
             gender=random.choice(['Male', 'Female']),
             profile_picture='profile_images/default.jpg',
+            speciality=random.choice(specialities)
         )
-        user.speciality = random.choice(specialities)
-        user.save()
         receptions.append(user)
     return receptions
+
 
 def create_doctors(departments, specialities, n=3):
     doctors = []
     for _ in range(n):
-        speciality = random.choice(specialities)
-        department = random.choice(departments)
-
         doctor = Doctor.objects.create_user(
             email=fake.unique.email(),
             password='12345678',
@@ -56,27 +56,40 @@ def create_doctors(departments, specialities, n=3):
             medical_license=fake.uuid4(),
             bonus='5%',
             cabinet=str(random.randint(101, 110)),
-            speciality=speciality,
-            department=department
+            speciality=random.choice(specialities),
+            department=random.choice(departments)
         )
         doctors.append(doctor)
     return doctors
 
-def create_services(departments, n=5):  # Removed doctors parameter as it's not used
+
+def create_services(departments, n=5):
     services = []
     for _ in range(n):
         service = DoctorServices.objects.create(
             doctor_service=fake.word(),
             department=random.choice(departments),
             price=random.randint(500, 5000),
-            discount=random.uniform(0, 0.3),
+            discount=round(random.uniform(0, 0.3), 2),
             salary_doctor=random.randint(100, 1000),
             service_label=fake.lexify('????')
         )
         services.append(service)
     return services
 
-def create_patients(doctors, services, departments, receptions, n=10):
+
+def create_payments(doctors, services, n=10):
+    payments = []
+    for _ in range(n):
+        payments.append(Payment.objects.create(
+            doctor=random.choice(doctors),
+            service=random.choice(services),
+            payment_type=random.choice(['cash', 'card'])
+        ))
+    return payments
+
+
+def create_patients(doctors, services, departments, receptions, payments, n=10):
     patients = []
     for _ in range(n):
         patient = Patient.objects.create(
@@ -92,60 +105,47 @@ def create_patients(doctors, services, departments, receptions, n=10):
             doctor=random.choice(doctors),
             status_patient=random.choice(['Живая очередь', 'Предзапись', 'Отмененные']),
             appointment_date=date.today(),
-            payment=None  # Payment is optional, so set to None
+            payment=random.choice(payments)
         )
         patients.append(patient)
     return patients
 
-def create_payments(doctors, services, n=10):
-    payments = []
-    for _ in range(n):
-        payment = Payment.objects.create(
-            doctor=random.choice(doctors),
-            service=random.choice(services),
-            payment_type=random.choice(['cash', 'card'])
-        )
-        payments.append(payment)
-    return payments
-
-def random_time(start=8, end=18):
-    hour = random.randint(start, end - 1)
-    minute = random.choice([0, 15, 30, 45])
-    return time(hour=hour, minute=minute)
 
 def create_customer_records(patients, receptions, departments, payments, services):
-    customer_records = []
-    for i in range(len(patients)):
-        started = random_time()
-        end = (datetime.combine(date.today(), started) + timedelta(minutes=30)).time()
+    records = []
+    for i, patient in enumerate(patients):
+        start_time = time(hour=random.randint(8, 10))
+        end_time = (datetime.combine(date.today(), start_time) + timedelta(minutes=30)).time()
 
-        customer_record = CustomerRecord.objects.create(
+        record = CustomerRecord.objects.create(
             reception=random.choice(receptions),
             department=random.choice(departments),
             change=random.randint(0, 100),
-            phone_number=patients[i].phone_number,  # Use patients[i] instead of payments[i].patient
-            started_time=started,
-            end_time=end,
-            payment_type=payments[i],
+            phone_number=patient.phone_number,
+            started_time=start_time,
+            end_time=end_time,
+            payment_type=payments[i % len(payments)],
             doctor_ser=random.choice(services),
-            doctor=payments[i].doctor,
-            patient=patients[i]  # Use patients[i] instead of payments[i].patient
+            doctor=patient.doctor,
+            patient=patient
         )
-        customer_records.append(customer_record)
-    return customer_records
+        records.append(record)
+    return records
+
 
 def create_history_records(patients, receptions, departments, doctors, services, customer_records):
-    for i in range(len(patients)):
+    for i, patient in enumerate(patients):
         HistoryRecord.objects.create(
-            patient=patients[i],
+            patient=patient,
             reception=random.choice(receptions),
             departament=random.choice(departments),
-            doctor=doctors[i % len(doctors)],
+            doctor=random.choice(doctors),
             service=random.choice(services),
             record=random.choice(['был в приеме', 'в ожидании', 'отменен']),
-            payment=customer_records[i],  # Use customer_records[i]
+            payment=customer_records[i % len(customer_records)],
             description=fake.sentence()
         )
+
 
 def create_price_lists(departments, services):
     for _ in range(5):
@@ -154,42 +154,47 @@ def create_price_lists(departments, services):
             service=random.choice(services)
         )
 
-def create_analytics(patients, services):
-    for _ in range(10):
-        Analytics.objects.create(
-            patient=random.choice(patients),
-            service=random.choice(services)
-        )
+
+def create_reports(patients):
+    for patient in patients:
+        if patient.payment:
+            Report.objects.create(
+                doctor=patient.doctor,
+                patient=patient,
+                service=patient.doctor_service,
+                payment=patient.payment
+            )
+
 
 def run():
-    # Clear existing data
-    Department.objects.all().delete()
-    Speciality.objects.all().delete()
-    Reception.objects.all().delete()
-    Doctor.objects.all().delete()
-    DoctorServices.objects.all().delete()
+    print("Очистка старых данных...")
+    Report.objects.all().delete()
+    HistoryRecord.objects.all().delete()
+    CustomerRecord.objects.all().delete()
     Patient.objects.all().delete()
     Payment.objects.all().delete()
-    CustomerRecord.objects.all().delete()
-    HistoryRecord.objects.all().delete()
+    DoctorServices.objects.all().delete()
+    Doctor.objects.all().delete()
+    Reception.objects.all().delete()
+    Speciality.objects.all().delete()
+    Department.objects.all().delete()
     PriceList.objects.all().delete()
-    Analytics.objects.all().delete()
 
     print("Создание данных...")
-
     departments = create_departments()
     specialities = create_specialities()
     receptions = create_receptions(specialities)
     doctors = create_doctors(departments, specialities)
     services = create_services(departments)
-    patients = create_patients(doctors, services, departments, receptions)
     payments = create_payments(doctors, services)
+    patients = create_patients(doctors, services, departments, receptions, payments)
     customer_records = create_customer_records(patients, receptions, departments, payments, services)
     create_history_records(patients, receptions, departments, doctors, services, customer_records)
     create_price_lists(departments, services)
-    create_analytics(patients, services)
+    create_reports(patients)
 
     print("🎉 Данные успешно засеяны!")
+
 
 if __name__ == '__main__':
     run()
