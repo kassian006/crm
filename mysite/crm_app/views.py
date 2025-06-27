@@ -2,6 +2,7 @@ from rest_framework import viewsets, generics, status
 from .serializers import *
 from rest_framework.views import APIView
 from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.filters import SearchFilter
 from rest_framework import filters
 from .filters import PatientFilter, ReportFilter
 from rest_framework_simplejwt.views import TokenObtainPairView
@@ -195,11 +196,21 @@ class DoctorServicesViewSet(viewsets.ModelViewSet):
     serializer_class = MakeDoctorServicesSerializer
 
 
-class PatientViewSet(viewsets.ModelViewSet):
+class PatientAPIView(generics.CreateAPIView):
     queryset = Patient.objects.all()
     serializer_class = PatientSerializer
-    filter_backends = [DjangoFilterBackend]
+
+
+class PatientDesktopListAPIView(generics.ListAPIView):
+    queryset = Patient.objects.all()
+    serializer_class = PatientDesktopSerializer
+    filter_backends = [DjangoFilterBackend, SearchFilter]
     filterset_class = PatientFilter
+    search_fields = ['full_name']
+
+class PatientDesktopDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Patient.objects.all()
+    serializer_class = PatientSerializer
 
 
 class MakeAppointmentInfoPatientAPIView(generics.ListCreateAPIView):

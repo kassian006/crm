@@ -39,4 +39,8 @@ urlpatterns = [
     path('admins/payment_record_info/', PaymentInfoPatientAPIView.as_view(), name='payment_record-info'),
     path('admins/patient_info/', InfoPatientAPIView.as_view(), name='patient-info'),
     path('export_excel/', ReportExportExcelView.as_view(), name='report-export-excel'),
+    path('admins/patient_list/', PatientDesktopListAPIView.as_view(), name='patient-list'),
+    path('admins/patient_list/<int:pk>/', PatientDesktopDetailAPIView.as_view(), name='patient-detail'),
+    path('admins/patient/', PatientAPIView.as_view(), name='patient-lis'),
+
 ]
