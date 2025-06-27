@@ -6,7 +6,6 @@ from .views import ReportExportExcelView
 
 
 router = SimpleRouter()
-router.register(r'user_profile', UserProfileViewSet, basename='user_profile')
 router.register(r'department', DepartmentViewSet, basename='department')
 router.register(r'speciality', SpecialityViewSet, basename='speciality')
 router.register(r'reception', ReceptionViewSet, basename='reception')
@@ -14,7 +13,6 @@ router.register(r'doctor', DoctorViewSet, basename='doctor')
 router.register(r'doctor_service', DoctorServicesViewSet, basename='doctor_service')
 router.register(r'payment', PaymentViewSet, basename='payment')
 router.register(r'customer_record', CustomerRecordViewSet, basename='customer_record')
-router.register(r'calendar_doctor', CalendarViewSet, basename='calendar_doctor')
 router.register(r'history_record', HistoryRecordViewSet, basename='history_record')
 router.register(r'report', ReportViewSet, basename='report')
 router.register(r'report_doctors', ReportDoctorsViewsSets, basename='report_doctors')
@@ -46,4 +44,7 @@ urlpatterns = [
     path('admins/doctor_list/', DoctorListAPIView.as_view(), name='doctor-list'),
     path('admins/doctor_list/<int:pk>/', DoctorDetailAPIView.as_view(), name='doctor-detail'),
     path('admins/doctor/create/', DoctorCreateAPIView.as_view(), name='doctor_create'),
+    path('admins/calendar_doctor/', CalendarListAPIView.as_view(), name='calendar-list'),
+    path('admins/calendar_doctor/<int:pk>/', CalendarDetailAPIView.as_view(), name='calendar-detail'),
+    path('admins/calendar/create/', CalendarCreateAPIView.as_view(), name='calendar_create'),
 ]

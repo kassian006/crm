@@ -251,9 +251,18 @@ class HistoryReceptionInfoPatientAPIView(generics.ListAPIView):
 
 
 
-class CalendarViewSet(viewsets.ModelViewSet):
+class CalendarListAPIView(generics.ListAPIView):
     queryset = Patient.objects.all()
     serializer_class = CalendarSerializer
+
+
+class CalendarDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Patient.objects.all()
+    serializer_class = CalendarSerializer
+
+
+class CalendarCreateAPIView(generics.CreateAPIView):
+    serializer_class = CalendarCreateSerializer
 
 
 class PaymentInfoPatientAPIView(generics.RetrieveUpdateAPIView):
