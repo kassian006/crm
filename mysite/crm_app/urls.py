@@ -5,12 +5,12 @@ from .views import (
     UserProfileRegisterView, DoctorRegisterView, ReceptionRegisterView,
     CustomLoginView, CustomAdminLoginView, LogoutView, UserProfileViewSet,
     DepartmentViewSet, SpecialityViewSet, ReceptionViewSet, DoctorViewSet,
-    DoctorListViewSet, DoctorServicesViewSet, PatientViewSet,
+    DoctorListViewSet, DoctorServicesViewSet, PatientAPIView,
     MakeAppointmentInfoPatientAPIView, HistoryRecordInfoPatientAPIView,
     HistoryReceptionInfoPatientAPIView, CalendarViewSet, PaymentInfoPatientAPIView,
     InfoPatientAPIView, PaymentViewSet, CustomerRecordViewSet, CheckRecordListAPIView,
     HistoryRecordViewSet, PriceListAPIView, PriceDetailAPIView, AnalyticsViewSet, PaymentInfoPatientSumAPIView,
-    HistoryReceptionInfoPatientDefAPIView, HistoryRecordInfoPatientDefAPIView
+    HistoryReceptionInfoPatientDefAPIView, HistoryRecordInfoPatientDefAPIView, PatientDesktopDetailAPIView, PatientDesktopListAPIView
 )
 
 
@@ -46,5 +46,8 @@ urlpatterns = [
     path('admins/history_reception_info/', HistoryReceptionInfoPatientAPIView.as_view(), name='history_reception-info'),
     path('admins/payment_record_info/', PaymentInfoPatientAPIView.as_view(), name='payment_record-info'),
     path('admins/patient_info/', InfoPatientAPIView.as_view(), name='patient-info'),
+    path('admins/patient_list/', PatientDesktopListAPIView.as_view(), name='patient-list'),
+    path('admins/patient_list/<int:pk>/', PatientDesktopDetailAPIView.as_view(), name='patient-detail'),
+    path('admins/patient/', PatientAPIView.as_view(), name='patient-lis'),
 
 ]

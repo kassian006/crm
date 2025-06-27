@@ -143,6 +143,11 @@ class ReceptionSerializer(serializers.ModelSerializer):
         model = Reception
         fields = '__all__'
 
+class PaymentTypeNameSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Payment
+        fields = ['payment_type']
+
 
 class DoctorProfileSerializer(serializers.ModelSerializer):
     class Meta:
@@ -180,10 +185,22 @@ class DoctorServicesSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class DoctorServicePriceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DoctorServices
+        fields = ['price']
+
+
 class DoctorNameServicesSerializer(serializers.ModelSerializer):
     class Meta:
         model = DoctorServices
         fields = ['doctor_service']
+
+class PriceDocSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DoctorServices
+        fields = ['doctor_service', 'price']
+
 
 class NameDoctorSerializer(serializers.ModelSerializer):
     class Meta:
@@ -204,12 +221,83 @@ class HistoryRecordSerializer(serializers.ModelSerializer):
 
 
 class PatientSerializer(serializers.ModelSerializer):
-    created_date = serializers.DateTimeField(format="%d %m %Y %H:%M")
+    # Используем SlugRelatedField для поиска по именам
+    doctor_service = serializers.SlugRelatedField(
+        slug_field='doctor_service',
+        queryset=DoctorServices.objects.all()
+    )
+    department = serializers.SlugRelatedField(
+        slug_field='department_name',
+        queryset=Department.objects.all()
+    )
+
+    # Для врача и регистратора сложнее, так как у них несколько полей имени
+    # Оставляем как есть для отображения, но добавляем поля для создания
+    reception_display = NameReceptionSerializer(source='reception', read_only=True)
+    doctor_display = DoctorNameSerializer(source='doctor', read_only=True)
+
+    # Поля для создания по именам
+    reception_first_name = serializers.CharField(write_only=True)
+    reception_last_name = serializers.CharField(write_only=True, required=False)
+    doctor_first_name = serializers.CharField(write_only=True)
+    doctor_last_name = serializers.CharField(write_only=True, required=False)
 
     class Meta:
         model = Patient
-        fields = ['full_name', 'phone_number', 'doctor_service', 'birthday', 'department', 'reception',
-                  'started_time', 'end_time', 'gender_patient', 'doctor', 'status_patient', 'created_date']
+        fields = [
+            'id', 'full_name', 'phone_number', 'doctor_service', 'birthday',
+            'department', 'reception_display', 'started_time', 'end_time',
+            'gender_patient', 'doctor_display', 'status_patient',
+            'reception_first_name', 'reception_last_name',
+            'doctor_first_name', 'doctor_last_name'
+        ]
+
+    def create(self, validated_data):
+        # Извлекаем данные для поиска врача и регистратора
+        reception_first = validated_data.pop('reception_first_name')
+        reception_last = validated_data.pop('reception_last_name', '')
+        doctor_first = validated_data.pop('doctor_first_name')
+        doctor_last = validated_data.pop('doctor_last_name', '')
+
+        try:
+            # Находим регистратора
+            if reception_last:
+                reception = Reception.objects.get(
+                    first_name=reception_first,
+                    last_name=reception_last
+                )
+            else:
+                reception = Reception.objects.get(first_name=reception_first)
+
+            # Находим врача
+            if doctor_last:
+                doctor = Doctor.objects.get(
+                    first_name=doctor_first,
+                    last_name=doctor_last
+                )
+            else:
+                doctor = Doctor.objects.get(first_name=doctor_first)
+
+            # Создаем пациента
+            patient = Patient.objects.create(
+                reception=reception,
+                doctor=doctor,
+                **validated_data
+            )
+            return patient
+
+        except (Reception.DoesNotExist, Doctor.DoesNotExist) as e:
+            raise serializers.ValidationError(f"Объект не найден: {str(e)}")
+
+class PatientDesktopSerializer(serializers.ModelSerializer):
+    created_date = serializers.DateTimeField(format="%m %d, %H:%M")
+    payment = PaymentTypeNameSerializer(read_only=True)
+    doctor_service = DoctorServicePriceSerializer()
+    doctor = NameDoctorSerializer()
+
+    class Meta:
+        model = Patient
+        fields = ['id', 'created_date', 'full_name', 'doctor', 'payment', 'doctor_service']
 
 
 class MakeDoctorServicesSerializer(serializers.ModelSerializer):
@@ -225,12 +313,6 @@ class Make1DoctorServicesSerializer(serializers.ModelSerializer):
 
 
 class Make2DoctorServicesSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = DoctorServices
-        fields = ['doctor_service', 'price']
-
-
-class PriceDocSerializer(serializers.ModelSerializer):
     class Meta:
         model = DoctorServices
         fields = ['doctor_service', 'price']
@@ -347,6 +429,12 @@ class PatientNameSerializer(serializers.ModelSerializer):
         fields = ['full_name', 'gender_patient']
 
 
+class PatientCheckSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Patient
+        fields = ['full_name']
+
+
 class PaymentSerializer(serializers.ModelSerializer):
     patient_detail = PatientNameSerializer(source='patient', read_only=True)
     doctor_detail = DoctorProfileSerializer(source='doctor', read_only=True)
@@ -354,12 +442,6 @@ class PaymentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Payment
         fields = ['patient_detail', 'doctor_detail', 'service_detail', 'payment_type']
-
-
-class PaymentTypeNameSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Payment
-        fields = ['payment_type']
 
 
 class HistoryRecordInfoPatientTotalSerializer(serializers.ModelSerializer):
@@ -412,14 +494,15 @@ class CustRecordSerializer(serializers.ModelSerializer):
 
 
 class CheckRecordSerializer(serializers.ModelSerializer):
-    patient_name = PatientNameSerializer(source='patient', read_only=True)
+    patient_name = PatientCheckSerializer(source='patient', read_only=True)
     doctor_name = DoctorNameSerializer(source='doctor', read_only=True)
-    service_name = DoctorNameServicesSerializer(source='service', read_only=True)
+    doctor_ser = DoctorNameServicesSerializer(read_only=True)
     price = serializers.DecimalField(max_digits=10, decimal_places=2, source='doctor_ser.price', read_only=True)
+    payment_type = PaymentTypeNameSerializer()
 
     class Meta:
         model = CustomerRecord
-        fields = ['patient_name', 'doctor_name', 'service_name', 'price', 'change', 'payment_type']
+        fields = ['patient_name', 'doctor_name', 'doctor_ser', 'price', 'change', 'payment_type']
 
 
 class PaymentInfoPatientSerializer(serializers.ModelSerializer):
