@@ -17,11 +17,6 @@ class SendLoginCodeSerializer(serializers.Serializer):
     email = serializers.EmailField()
 
 
-class UserProfileSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = UserProfile
-        fields = '__all__'
-
 class LoginSerializers(serializers.Serializer):
     email = serializers.CharField()
     password = serializers.CharField(write_only=True)
@@ -183,11 +178,6 @@ class DoctorNameServicesSerializer(serializers.ModelSerializer):
         model = DoctorServices
         fields = ['doctor_service']
 
-class PriceDocSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = DoctorServices
-        fields = ['doctor_service', 'price']
-
 
 class NameDoctorSerializer(serializers.ModelSerializer):
     class Meta:
@@ -199,12 +189,6 @@ class HistoryRecordInfoPatSerializer(serializers.ModelSerializer):
     class Meta:
         model = HistoryRecord
         fields = ['record']
-
-
-class HistoryRecordSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = HistoryRecord
-        fields = '__all__'
 
 
 class PatientSerializer(serializers.ModelSerializer):
@@ -321,10 +305,10 @@ class PriceDocSerializer(serializers.ModelSerializer):
 #         fields = ['full_name', 'reception', 'doctor', 'started_time', 'end_time', 'status_patient', 'department', 'doctor_service']
 
 class MakeAppointmentInfoPatientSerializer(serializers.ModelSerializer):
-    reception = NameReceptionSerializer(read_only=True)
-    doctor = NameDoctorSerializer(read_only=True)
-    department = DepartmentSerializer(read_only=True)
-    doctor_service = MakeDoctorServicesSerializer(read_only=True)
+    reception = NameReceptionSerializer(write_only=True)
+    doctor = NameDoctorSerializer(write_only=True)
+    department = DepartmentSerializer(write_only=True)
+    doctor_service = MakeDoctorServicesSerializer(write_only=True)
     birthday = serializers.DateField(format="%d.%m.%Y", input_formats=['%d.%m.%Y', '%Y-%m-%d'])
 
     class Meta:
@@ -377,7 +361,18 @@ class CalendarSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Patient
-        fields = ['started_time', 'end_time', 'appointment_date', 'status_patient', 'doctor', 'department_name', 'service_label']
+        fields = ['started_time', 'end_time', 'appointment_date', 'status_patient', 'doctor', 'department_name', 'service_label', 'appointment_time']
+
+
+class CalendarCreateSerializer(serializers.ModelSerializer):
+    doctor = NameDoctorSerializer(write_only=True)
+    department_name = serializers.CharField(source='department.department_name', write_only=True)
+    service_label = serializers.CharField(source='doctor_service.service_label', write_only=True)
+    appointment_time = serializers.TimeField(format="%H:%M:%S", input_formats=["%H:%M:%S"], required=False)
+
+    class Meta:
+        model = Patient
+        fields = ['started_time', 'end_time', 'appointment_date', 'status_patient', 'doctor', 'department_name', 'service_label', 'appointment_time']
 
 
 class HistoryRecordInfoPatientSerializer(serializers.ModelSerializer):
