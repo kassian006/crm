@@ -9,9 +9,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.response import Response
 from django.db.models import Sum, Q
 from rest_framework.viewsets import ReadOnlyModelViewSet
-from drf_yasg.utils import swagger_auto_schema
 from .models import Report
-from rest_framework.parsers import MultiPartParser, FormParser
 from .serializers import ReportSerializer
 from .models import EmailLoginCode
 from rest_framework.decorators import api_view
@@ -39,6 +37,8 @@ from django.db.models import Sum
 from rest_framework.viewsets import ReadOnlyModelViewSet
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.parsers import MultiPartParser, FormParser
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework.parsers import MultiPartParser, FormParser
 
 from django.db.models import Count, Q
