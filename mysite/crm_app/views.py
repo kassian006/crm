@@ -40,6 +40,8 @@ from django.db.models import Sum
 from rest_framework.viewsets import ReadOnlyModelViewSet
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.parsers import MultiPartParser, FormParser
+from drf_yasg.utils import swagger_auto_schema
 
 
 @api_view(['POST'])
@@ -179,6 +181,12 @@ class DoctorDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 
 class DoctorCreateAPIView(generics.CreateAPIView):
     serializer_class = DoctorCreateSerializer
+    parser_classes = (MultiPartParser, FormParser)
+
+    @swagger_auto_schema(request_body=DoctorCreateSerializer)
+    def post(self, request, *args, **kwargs):
+        return super().post(request, *args, **kwargs)
+    
 
     # def create(self, request, *args, **kwargs):
     #     try:
