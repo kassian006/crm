@@ -26,9 +26,7 @@ from .models import EmailLoginCode
 from .serializers import SendLoginCodeSerializer, VerifyLoginCodeSerializer
 from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
-import io
 from django.http import HttpResponse
-import pandas as pd
 import openpyxl
 from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework.views import APIView
@@ -36,13 +34,15 @@ from rest_framework.response import Response
 from django.db.models import Sum, F
 from .models import Report
 from django.utils.dateparse import parse_date
-from django.db.models import Q
 from openpyxl import Workbook
 from django.db.models import Sum
 from rest_framework.viewsets import ReadOnlyModelViewSet
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.parsers import MultiPartParser, FormParser
+
+from django.db.models import Count, Q
+from django.db.models.functions import TruncDay, TruncWeek, TruncMonth, TruncYear
 
 
 
@@ -485,3 +485,79 @@ class SummaryReportExportExcelView(APIView):
         response['Content-Disposition'] = 'attachment; filename=summary_report.xlsx'
         workbook.save(response)
         return response
+
+
+
+class AppointmentStatsAPIView(APIView):
+    def get(self, request):
+        period = request.query_params.get("period", "weekly")
+
+        now = timezone.now().date()
+        trunc_map = {
+            'daily': TruncDay,
+            'weekly': TruncWeek,
+            'monthly': TruncMonth,
+            'yearly': TruncYear
+        }
+        delta_map = {
+            'daily': 1,
+            'weekly': 7,
+            'monthly': 30,
+            'yearly': 365
+        }
+
+        if period not in trunc_map:
+            return Response({"error": "Invalid period"}, status=400)
+
+        trunc_func = trunc_map[period]
+        start_date = now - timedelta(days=delta_map[period])
+
+        # Основной график
+        chart_data = (
+            Patient.objects
+            .filter(appointment_date__gte=start_date)
+            .annotate(period=trunc_func("appointment_date"))
+            .values("period")
+            .annotate(
+                total=Count("id"),
+                canceled=Count("id", filter=Q(status_patient='Отмененные'))
+            )
+            .order_by("period")
+        )
+
+        # Общие метрики
+        total_doctors = Doctor.objects.count()
+
+        total_patients = Patient.objects.filter(appointment_date__gte=start_date).count()
+        unique_patients_set = set()
+        repeated = 0
+        new = 0
+
+        for p in Patient.objects.filter(appointment_date__gte=start_date).order_by('appointment_date'):
+            key = (p.full_name.strip().lower(), str(p.phone_number))
+            if key in unique_patients_set:
+                repeated += 1
+            else:
+                unique_patients_set.add(key)
+                new += 1
+
+        new_percent = round((new / max(total_patients, 1)) * 100)
+        repeated_percent = 100 - new_percent
+
+        # Рост и падение (сравниваем с предыдущим периодом)
+        prev_start = start_date - timedelta(days=delta_map[period])
+        prev_count = Patient.objects.filter(appointment_date__gte=prev_start, appointment_date__lt=start_date).count()
+        current_count = total_patients
+
+        growth = current_count - prev_count
+        trend = "up" if growth > 0 else ("down" if growth < 0 else "same")
+
+        return Response({
+            "chart": chart_data,
+            "total_doctors": total_doctors,
+            "total_clients": len(unique_patients_set),
+            "new_percent": new_percent,
+            "repeated_percent": repeated_percent,
+            "growth": growth,
+            "trend": trend
+        })

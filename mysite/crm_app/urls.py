@@ -42,4 +42,8 @@ urlpatterns = [
     path('admins/summary_report_export_excel/', SummaryReportExportExcelView.as_view(), name='summary-report-export'),
     path('admins/report_list/', ReportListAPIView.as_view(), name='report-list-api'),
     path('admins/report_doctors/', ReportDoctorsAPIViews.as_view(), name='report-doctors'),
+    path('summary_report/', SummaryReportView.as_view(), name='summary-report'),
+    path('summary_report_export_excel/', SummaryReportExportExcelView.as_view(), name='summary-report-export'),
+    path('report_list/', ReportListAPIView.as_view(), name='report-list-api'),
+    path('analys_chart/', AppointmentStatsAPIView.as_view(), name='analys_chart')
 ]
