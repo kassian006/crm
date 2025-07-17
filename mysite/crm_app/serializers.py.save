@@ -360,6 +360,15 @@ class MakeAppointmentInfoPatientSerializer(serializers.ModelSerializer):
 
 
 
+class NotificationSerializer(serializers.ModelSerializer):
+    department_name = serializers.CharField(source='department.department_name', read_only=True)
+
+    class Meta:
+        model = Patient
+        fields = ['started_time', 'appointment_date', 'department_name', 'full_name']
+
+
+
 class CalendarSerializer(serializers.ModelSerializer):
     doctor = NameDoctorSerializer(read_only=True)
     department_name = serializers.CharField(source='department.department_name', read_only=True)
