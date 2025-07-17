@@ -344,7 +344,7 @@ class MakeAppointmentInfoPatientSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Patient
-        fields = ['full_name', 'reception', 'doctor', 'started_time', 'end_time', 'status_patient', 'department', 'doctor_service', 'birthday']
+        fields = ['id', 'full_name', 'reception', 'doctor', 'started_time', 'end_time', 'status_patient', 'department', 'doctor_service', 'birthday']
         extra_kwargs = {
             'full_name': {'required': True},
             'started_time': {'required': True},
@@ -412,7 +412,7 @@ class CalendarSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Patient
-        fields = ['started_time', 'end_time', 'appointment_date', 'status_patient', 'doctor', 'department_name', 'service_label', 'appointment_time']
+        fields = ['id', 'started_time', 'end_time', 'appointment_date', 'status_patient', 'doctor', 'department_name', 'service_label', 'appointment_time']
 
 
 class CalendarCreateSerializer(serializers.ModelSerializer):
@@ -454,7 +454,7 @@ class HistoryReceptionInfoPatientSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Patient
-        fields = ['full_name', 'reception', 'doctor', 'appointment_date', 'department',
+        fields = ['id', 'full_name', 'reception', 'doctor', 'appointment_date', 'department',
                   'doctor_service', 'patient_history_filtered']
 
     def get_patient_history_filtered(self, obj):
@@ -521,7 +521,7 @@ class CustomerRecordSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CustomerRecord
-        fields = ['reception_detail', 'patient_detail', 'doctor_detail', 'service_detail', 'department_detail', 'doctor_ser', 'change',
+        fields = ['id', 'reception_detail', 'patient_detail', 'doctor_detail', 'service_detail', 'department_detail', 'doctor_ser', 'change',
                   'payment_type', 'created_date', 'phone_number']
 
 
