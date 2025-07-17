@@ -104,29 +104,54 @@ class DoctorListSerializer(serializers.ModelSerializer):
 
 
 class DoctorDetailSerializer(serializers.ModelSerializer):
-    department_name = DepartmentSerializer(source='department', read_only=True)
-    speciality = SpecialitySerializer()
+    # Ввод по строке (названию)
+    department = serializers.SlugRelatedField(
+        slug_field='department_name',
+        queryset=Department.objects.all()
+    )
+    speciality = serializers.SlugRelatedField(
+        slug_field='speciality_title',
+        queryset=Speciality.objects.all()
+    )
+
+    # Вывод красивых названий
+    department_name = serializers.CharField(source='department.department_name', read_only=True)
+    speciality_title = serializers.CharField(source='speciality.speciality_title', read_only=True)
 
     class Meta:
         model = Doctor
-        fields = ['image', 'first_name', 'last_name', 'email', 'phone_number', 'department_name', 'speciality', 'bonus']
+        fields = [
+            'image', 'first_name', 'last_name', 'email', 'phone_number',
+            'department', 'department_name',
+            'speciality', 'speciality_title',
+            'bonus'
+        ]
 
-    def update(self, instance, validated_data):
-        speciality_data = validated_data.pop('speciality', None)
 
-        # Обновление полей Doctor
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
-        instance.save()
-
-        # Обновление speciality (если вложенные поля)
-        if speciality_data:
-            speciality = instance.speciality
-            for attr, value in speciality_data.items():
-                setattr(speciality, attr, value)
-            speciality.save()
-
-        return instance
+# class DoctorDetailSerializer(serializers.ModelSerializer):
+#     department_name = DepartmentSerializer(source='department', read_only=True)
+#     speciality = SpecialitySerializer()
+#
+#     class Meta:
+#         model = Doctor
+#         fields = ['image', 'first_name', 'last_name', 'email', 'phone_number', 'department_name', 'speciality', 'bonus']
+#
+#     def update(self, instance, validated_data):
+#         speciality_data = validated_data.pop('speciality', None)
+#
+#         # Обновление полей Doctor
+#         for attr, value in validated_data.items():
+#             setattr(instance, attr, value)
+#         instance.save()
+#
+#         # Обновление speciality (если вложенные поля)
+#         if speciality_data:
+#             speciality = instance.speciality
+#             for attr, value in speciality_data.items():
+#                 setattr(speciality, attr, value)
+#             speciality.save()
+#
+#         return instance
 
 
 class DoctorCreateSerializer(serializers.ModelSerializer):
@@ -135,7 +160,7 @@ class DoctorCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Doctor
-        fields = ['first_name', 'last_name', 'image', 'department', 'speciality', 'phone_number', 'email', 'bonus', 'cabinet']
+        fields = ['id', 'first_name', 'last_name', 'image', 'department', 'speciality', 'phone_number', 'email', 'bonus', 'cabinet']
 
     def create(self, validated_data):
         # Extract nested data
