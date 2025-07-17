@@ -155,29 +155,48 @@ class DoctorDetailSerializer(serializers.ModelSerializer):
 
 
 class DoctorCreateSerializer(serializers.ModelSerializer):
-    department = serializers.PrimaryKeyRelatedField(queryset=Department.objects.all())
-    speciality = serializers.PrimaryKeyRelatedField(queryset=Speciality.objects.all())
+    department = serializers.SlugRelatedField(
+        queryset=Department.objects.all(),
+        slug_field='department_name'
+    )
+    speciality = serializers.SlugRelatedField(
+        queryset=Speciality.objects.all(),
+        slug_field='speciality_title'
+    )
 
     class Meta:
         model = Doctor
         fields = ['id', 'first_name', 'last_name', 'image', 'department', 'speciality', 'phone_number', 'email', 'bonus', 'cabinet']
 
     def create(self, validated_data):
-        # Extract nested data
-        department = validated_data.pop('department', None)  # Already a Department instance or None
-        speciality = validated_data.pop('speciality', None)  # Already a Speciality instance
+        return Doctor.objects.create(**validated_data)
 
-        # Validate speciality (since it's required)
-        if not speciality:
-            raise serializers.ValidationError({"speciality": "This field is required."})
 
-        # Create Doctor instance
-        doctor = Doctor.objects.create(
-            department=department,  # Use the Department instance directly
-            speciality=speciality,  # Use the Speciality instance directly
-            **validated_data
-        )
-        return doctor
+
+# class DoctorCreateSerializer(serializers.ModelSerializer):
+#     department = serializers.PrimaryKeyRelatedField(queryset=Department.objects.all())
+#     speciality = serializers.PrimaryKeyRelatedField(queryset=Speciality.objects.all())
+#
+#     class Meta:
+#         model = Doctor
+#         fields = ['id', 'first_name', 'last_name', 'image', 'department', 'speciality', 'phone_number', 'email', 'bonus', 'cabinet']
+#
+#     def create(self, validated_data):
+#         # Extract nested data
+#         department = validated_data.pop('department', None)  # Already a Department instance or None
+#         speciality = validated_data.pop('speciality', None)  # Already a Speciality instance
+#
+#         # Validate speciality (since it's required)
+#         if not speciality:
+#             raise serializers.ValidationError({"speciality": "This field is required."})
+#
+#         # Create Doctor instance
+#         doctor = Doctor.objects.create(
+#             department=department,  # Use the Department instance directly
+#             speciality=speciality,  # Use the Speciality instance directly
+#             **validated_data
+#         )
+#         return doctor
 
 
 class DoctorNameSerializer(serializers.ModelSerializer):
