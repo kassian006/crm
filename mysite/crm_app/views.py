@@ -242,6 +242,11 @@ class CalendarListAPIView(generics.ListAPIView):
     serializer_class = CalendarSerializer
 
 
+class NotificationAPIView(generics.ListCreateAPIView):
+    queryset = Patient.objects.all()
+    serializer_class = NotificationSerializer
+
+
 class CalendarDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Patient.objects.all()
     serializer_class = CalendarSerializer

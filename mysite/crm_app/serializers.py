@@ -359,6 +359,26 @@ class MakeAppointmentInfoPatientSerializer(serializers.ModelSerializer):
         return patient
 
 
+class NotificationSerializer(serializers.ModelSerializer):
+    department = DepartmentSerializer(read_only=True)  # Для GET
+    department_name = serializers.CharField(write_only=True)  # Для POST
+
+    class Meta:
+        model = Patient
+        fields = ['id', 'started_time', 'created_date', 'full_name', 'department', 'department_name']
+
+    def create(self, validated_data):
+        department_name = validated_data.pop('department_name')
+
+        try:
+            department = Department.objects.get(name=department_name)
+        except Department.DoesNotExist:
+            raise serializers.ValidationError({
+                "department_name": f"Department '{department_name}' does not exist."
+            })
+
+        return Patient.objects.create(department=department, **validated_data)
+
 
 class CalendarSerializer(serializers.ModelSerializer):
     doctor = NameDoctorSerializer(read_only=True)
@@ -390,7 +410,7 @@ class HistoryRecordInfoPatientSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Patient
-        fields = ['full_name', 'reception', 'doctor', 'appointment_date', 'department',
+        fields = ['id', 'full_name', 'reception', 'doctor', 'appointment_date', 'department',
                   'doctor_service', 'patient_history']  # Убрано дублирование count_record, count_record_history
 
 

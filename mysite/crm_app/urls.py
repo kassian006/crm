@@ -36,6 +36,7 @@ urlpatterns = [
     path('admins/doctor_list/', DoctorListAPIView.as_view(), name='doctor-list'),
     path('admins/doctor_list/<int:pk>/', DoctorDetailAPIView.as_view(), name='doctor-detail'),
     path('admins/doctor/create/', DoctorCreateAPIView.as_view(), name='doctor_create'),
+    path('admins/notification/', NotificationAPIView.as_view(), name='notification'),
     path('admins/calendar_doctor/', CalendarListAPIView.as_view(), name='calendar-list'),
     path('admins/calendar_doctor/<int:pk>/', CalendarDetailAPIView.as_view(), name='calendar-detail'),
     path('admins/calendar/create/', CalendarCreateAPIView.as_view(), name='calendar_create'),
