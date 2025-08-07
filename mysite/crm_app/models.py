@@ -177,6 +177,7 @@ class Patient(models.Model):
     )
     status_patient = models.CharField(max_length=32, choices=STATUS_CHOICES)
     created_date = models.DateTimeField(auto_now_add=True)
+    descriptions = models.TextField()
     appointment_date = models.DateField(auto_now_add=True)  # Новое поле для даты записи
     appointment_time = models.TimeField(auto_now_add=True, null=True, blank=True)
 

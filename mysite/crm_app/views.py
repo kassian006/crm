@@ -176,7 +176,20 @@ class DoctorListAPIView(generics.ListAPIView):
     search_fields = ['first_name', 'last_name']
 
 
+class DoctorDocListAPIView(generics.ListAPIView):
+    queryset = Doctor.objects.all()
+    serializer_class = DoctorListSerializer
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
+    filterset_fields = ['department']
+    search_fields = ['first_name', 'last_name']
+
+
 class DoctorDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Doctor.objects.all()
+    serializer_class = DoctorDetailSerializer
+
+
+class DoctorDocDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Doctor.objects.all()
     serializer_class = DoctorDetailSerializer
 
@@ -231,13 +244,48 @@ class HistoryRecordInfoPatientAPIView(generics.ListAPIView):
     serializer_class = HistoryRecordInfoPatientSerializer
 
 
+class HistoryRecordInfoPatientDocAPIView(generics.ListAPIView):
+    queryset = Patient.objects.all()
+    serializer_class = HistoryRecordInfoPatientSerializer
+
+
 class HistoryReceptionInfoPatientAPIView(generics.ListAPIView):
     queryset = Patient.objects.all()
     serializer_class = HistoryReceptionInfoPatientSerializer
 
 
+class HistoryReceptionInfoPatientDocAPIView(generics.ListAPIView):
+    queryset = Patient.objects.all()
+    serializer_class = HistoryReceptionInfoPatientSerializer
+
+
+class DoctorServicesAPIView(viewsets.ModelViewSet):
+    queryset = DoctorServices.objects.all()
+    serializer_class = DoctorServicesSerializer
+
+
+class DepartmentAPIView(viewsets.ModelViewSet):
+    queryset = Department.objects.all()
+    serializer_class = DepartmentAllSerializer
+
+
+class ReceptionAPIView(viewsets.ModelViewSet):
+    queryset = Reception.objects.all()
+    serializer_class = ReceptionSerializer
+
+
+class SpecialityAPIView(viewsets.ModelViewSet):
+    queryset = Speciality.objects.all()
+    serializer_class = SpecialityAllSerializer
+
+
 
 class CalendarListAPIView(generics.ListAPIView):
+    queryset = Patient.objects.all()
+    serializer_class = CalendarSerializer
+
+
+class CalendarDocListAPIView(generics.ListAPIView):
     queryset = Patient.objects.all()
     serializer_class = CalendarSerializer
 
@@ -247,7 +295,17 @@ class NotificationAPIView(generics.ListCreateAPIView):
     serializer_class = NotificationSerializer
 
 
+class NotificationDocAPIView(generics.ListCreateAPIView):
+    queryset = Patient.objects.all()
+    serializer_class = NotificationSerializer
+
+
 class CalendarDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Patient.objects.all()
+    serializer_class = CalendarSerializer
+
+
+class CalendarDocDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Patient.objects.all()
     serializer_class = CalendarSerializer
 
@@ -266,9 +324,24 @@ class PaymentInfoPatientDetailAPIView(generics.RetrieveUpdateAPIView):
     serializer_class = PaymentInfoPatientSerializer
 
 
+class PaymentInfoPatientDocListAPIView(generics.ListAPIView):
+    queryset = Patient.objects.all()
+    serializer_class = PaymentInfoPatientSerializer
+
+
+class PaymentInfoPatientDocDetailAPIView(generics.RetrieveUpdateAPIView):
+    queryset = Patient.objects.all()
+    serializer_class = PaymentInfoPatientSerializer
+
+
 class InfoPatientAPIView(generics.ListAPIView):
     queryset = Patient.objects.all()
     serializer_class = InfoPatientSerializer
+
+
+class InfoPatientDocAPIView(generics.ListAPIView):
+    queryset = Patient.objects.all()
+    serializer_class = InfoPatientDocSerializer
 
 
 class CheckRecordListAPIView(generics.ListAPIView):
@@ -276,9 +349,27 @@ class CheckRecordListAPIView(generics.ListAPIView):
     serializer_class = CheckRecordSerializer
 
 
-class PriceListAPIView(generics.ListAPIView):
-    queryset = PriceList.objects.all()
-    serializer_class = PriceListSerializer
+class PriceListGroupedView(APIView):
+
+    def get(self, request):
+        queryset = PriceList.objects.select_related('department', 'service')
+        grouped_data = defaultdict(list)
+        for price in queryset:
+            dep = price.department
+            service = price.service
+            grouped_data[dep.id].append({
+                "name": service.doctor_service,
+                "price": f"{int(service.price)} сом"
+            })
+        response = []
+        for dept_id, prices in grouped_data.items():
+            dep_obj = Department.objects.get(id=dept_id)
+            response.append({
+                "id": dept_id,
+                "title": dep_obj.department_name,
+                "prices": prices
+            })
+        return Response(response)
 
 
 class PriceDetailAPIView(generics.RetrieveAPIView):

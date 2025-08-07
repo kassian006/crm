@@ -74,6 +74,20 @@ class SpecialitySerializer(serializers.ModelSerializer):
         fields = ['speciality_title']
 
 
+class DepartmentAllSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Department
+        fields = '__all__'
+
+
+
+class SpecialityAllSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Speciality
+        fields = '__all__'
+
+
+
 class ReceptionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Reception
@@ -577,6 +591,12 @@ class InfoPatientSerializer(serializers.ModelSerializer):
     class Meta:
         model = Patient
         fields = ['full_name', 'phone_number', 'gender_patient']
+
+
+class InfoPatientDocSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Patient
+        fields = ['full_name', 'phone_number', 'gender_patient', 'descriptions']
 
 
 class PriceListSerializer(serializers.ModelSerializer):

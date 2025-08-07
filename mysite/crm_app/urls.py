@@ -3,10 +3,15 @@ from rest_framework.routers import SimpleRouter, DefaultRouter
 # from .views import PaymentInfoPatientSumAPIView
 from .views import *
 from .views import ReportExportExcelView
-# import argen
 
 
 router = SimpleRouter()
+
+router.register(r'doctor_servise', DoctorServicesAPIView, basename='doctor_servise'),
+router.register(r'receptions', ReceptionAPIView, basename='receptions'),
+router.register(r'departments', DepartmentAPIView, basename='departments'),
+router.register(r'speciality', SpecialityAPIView, basename='speciality'),
+
 
 urlpatterns = [
     path('', include(router.urls)),
@@ -18,7 +23,7 @@ urlpatterns = [
     path('logout/', LogoutView.as_view(), name='logout'),
     path('admins/print_check/', CheckRecordListAPIView.as_view(), name='print_check'),
     path('admins/make_appointment_info_patient/', MakeAppointmentInfoPatientAPIView.as_view(), name='make_appointment_info-patient'),
-    path('admins/price_list/', PriceListAPIView.as_view(), name='price_list'),
+    path('admins/price_list/', PriceListGroupedView.as_view(), name='price_list'),
     path('admins/price_list/<int:pk>/', PriceDetailAPIView.as_view(), name='price_detail'),
     path('def/sum/', PaymentInfoPatientSumAPIView.as_view(), name='payment-sum'),
     path('def/total_count/', HistoryReceptionInfoPatientDefAPIView.as_view(), name='payment-total_count'),
@@ -47,6 +52,20 @@ urlpatterns = [
     path('summary_report/', SummaryReportView.as_view(), name='summary-report'),
     path('summary_report_export_excel/', SummaryReportExportExcelView.as_view(), name='summary-report-export'),
     path('report_list/', ReportListAPIView.as_view(), name='report-list-api'),
-    path('analys_chart/', AppointmentStatisticsAPIView.as_view(), name='analys_chart')
+    path('analys_chart/', AppointmentStatisticsAPIView.as_view(), name='analys_chart'),
+    # Doctor
+    path('doc/calendar_doctor/', CalendarDocListAPIView.as_view(), name='calendar-list'),
+    path('doc/calendar_doctor/<int:pk>/', CalendarDocDetailAPIView.as_view(), name='calendar-detail'),
+
+    path('doc/doctor_list/', DoctorListAPIView.as_view(), name='doctor-list'),
+    path('doc/doctor_list/<int:pk>/', DoctorDocListAPIView.as_view(), name='doctor-detail'),
+
+    path('doc/history_record_info/', HistoryRecordInfoPatientDocAPIView.as_view(), name='history_record-info'),
+    path('doc/history_reception_info/', HistoryReceptionInfoPatientDocAPIView.as_view(), name='history_reception-info'),
+    path('doc/payment_record_info/', PaymentInfoPatientDocListAPIView.as_view(), name='payment_record-list'),
+    path('doc/payment_record_info/<int:pk>/', PaymentInfoPatientDocDetailAPIView.as_view(),name='payment_record-detail'),
+    path('doc/patient_info/', InfoPatientDocAPIView.as_view(), name='patient-info'),
+
+    path('doc/notification/', NotificationDocAPIView.as_view(), name='notification'),
 
 ]
