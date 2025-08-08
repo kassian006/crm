@@ -121,36 +121,36 @@ def reset_password_view(request):
 
 
 class CustomLoginView(TokenObtainPairView):
-    serializer_class = LoginSerializers
-
-    def post(self, request, *args, **kwargs):
-        serializer=self.get_serializer(data=request.data)
-        try:
-            serializer.is_valid(raise_exception=True)
-        except Exception:
-            return Response({"detail: Неверные учетные данные"}, status=status.HTTP_401_UNAUTHORIZED)
-
-        user=serializer.validated_data
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-
-class CustomAdminLoginView(TokenObtainPairView):
-    serializer_class = LoginSerializers
+    serializer_class = LoginSerializer
 
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         try:
             serializer.is_valid(raise_exception=True)
-        except Exception:
-            return Response({"detail": "Неверные учетные данные"}, status=status.HTTP_401_UNAUTHORIZED)
+        except Exception as e:
+            return Response({"detail": f"Неверные учетные данные: {e}"}, status=status.HTTP_401_UNAUTHORIZED)
 
-        user = serializer.validated_data.get('user')
-
-        if not user.is_staff and not user.is_superuser:
-            return Response({"detail": "Доступ разрешен только администраторам"},
-                            status=status.HTTP_403_FORBIDDEN)
-
+        user = serializer.validated_data
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+# class CustomAdminLoginView(TokenObtainPairView):
+#     serializer_class = LoginSerializers
+#
+#     def post(self, request, *args, **kwargs):
+#         serializer = self.get_serializer(data=request.data)
+#         try:
+#             serializer.is_valid(raise_exception=True)
+#         except Exception:
+#             return Response({"detail": "Неверные учетные данные"}, status=status.HTTP_401_UNAUTHORIZED)
+#
+#         user = serializer.validated_data.get('user')
+#
+#         if not user.is_staff and not user.is_superuser:
+#             return Response({"detail": "Доступ разрешен только администраторам"},
+#                             status=status.HTTP_403_FORBIDDEN)
+#
+#         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class LogoutView(generics.GenericAPIView):

@@ -5,6 +5,7 @@ from django.contrib.auth import authenticate
 from rest_framework.views import APIView
 from django.http import HttpResponse
 import openpyxl
+from django.contrib.auth import get_user_model
 from django.db.models import Sum
 from .models import Report
 
@@ -17,30 +18,71 @@ class SendLoginCodeSerializer(serializers.Serializer):
     email = serializers.EmailField()
 
 
-class LoginSerializers(serializers.Serializer):
-    email = serializers.CharField()
+# class LoginSerializers(serializers.Serializer):
+#     email = serializers.CharField()
+#     password = serializers.CharField(write_only=True)
+#
+#     def validate(self, data):
+#         user = authenticate(**data)
+#         if user and user.is_active:
+#             # 👇 ВОТ ЭТО главное: возвращаем словарь, а не просто user
+#             return {
+#                 'user': user
+#             }
+#         raise serializers.ValidationError("Неверные учетные данные")
+#
+#     def to_representation(self, validated_data):
+#         user = validated_data['user']  # теперь тут всё как надо
+#         refresh = RefreshToken.for_user(user)
+#         return {
+#             'user': {
+#                 'email': user.email,
+#                 'role': user.role,
+#             },
+#             'access': str(refresh.access_token),
+#             'refresh': str(refresh)
+#         }
+
+User = get_user_model()
+
+
+class LoginSerializer(serializers.Serializer):
+    email = serializers.EmailField()
     password = serializers.CharField(write_only=True)
 
-    def validate(self, data):
-        user = authenticate(**data)
-        if user and user.is_active:
-            # 👇 ВОТ ЭТО главное: возвращаем словарь, а не просто user
-            return {
-                'user': user
-            }
-        raise serializers.ValidationError("Неверные учетные данные")
 
-    def to_representation(self, validated_data):
-        user = validated_data['user']  # теперь тут всё как надо
+    def validate(self, data):
+        email = data.get('email')
+        password = data.get('password')
+
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            raise serializers.ValidationError("Пользователь с таким email не найден")
+
+        if not (user.check_password(password) or user.password == password):
+            raise serializers.ValidationError("Неверный пароль")
+
+        if not user.is_active:
+            raise serializers.ValidationError("Пользователь не активен")
+
+        self.context['user'] = user
+        return data
+
+    def to_representation(self, instance):
+        user = self.context['user']
         refresh = RefreshToken.for_user(user)
+
         return {
             'user': {
+                'id': user.id,
                 'email': user.email,
-                'role': user.role,  # можно добавить больше инфы, если надо
+                'role': user.role,
             },
             'access': str(refresh.access_token),
-            'refresh': str(refresh)
+            'refresh': str(refresh),
         }
+
 
 
 class LogoutSerializer(serializers.Serializer):
@@ -374,10 +416,11 @@ class MakeAppointmentInfoPatientSerializer(serializers.ModelSerializer):
     department = DepartmentSerializer(write_only=True)
     doctor_service = MakeDoctorServicesSerializer(write_only=True)
     birthday = serializers.DateField(format="%d.%m.%Y", input_formats=['%d.%m.%Y', '%Y-%m-%d'])
+    payment_customer = PaymentTypeNameSerializer(source='payment', read_only=True)
 
     class Meta:
         model = Patient
-        fields = ['id', 'full_name', 'reception', 'doctor', 'started_time', 'end_time', 'status_patient', 'department', 'doctor_service', 'birthday']
+        fields = ['id', 'full_name', 'reception', 'doctor', 'started_time', 'end_time', 'status_patient', 'department', 'doctor_service', 'birthday', 'payment_customer']
         extra_kwargs = {
             'full_name': {'required': True},
             'started_time': {'required': True},
@@ -386,6 +429,7 @@ class MakeAppointmentInfoPatientSerializer(serializers.ModelSerializer):
             'department': {'required': True},
             'doctor_service': {'required': True},
             'birthday': {'required': True},
+            'payment_customer': {'required': True},
         }
 
     def create(self, validated_data):
