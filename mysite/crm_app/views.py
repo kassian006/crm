@@ -170,18 +170,26 @@ class LogoutView(generics.GenericAPIView):
 
 class DoctorListAPIView(generics.ListAPIView):
     queryset = Doctor.objects.all()
-    serializer_class = DoctorListSerializer
+    serializer_class = DoctorDoctorSerializer
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
     filterset_fields = ['department']
     search_fields = ['first_name', 'last_name']
+
+    def get_queryset(self):
+        return UserProfile.objects.filter(id=self.request.user.id)
+
 
 
 class DoctorDocListAPIView(generics.ListAPIView):
     queryset = Doctor.objects.all()
-    serializer_class = DoctorListSerializer
+    serializer_class = DoctorDoctorSerializer
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
     filterset_fields = ['department']
     search_fields = ['first_name', 'last_name']
+
+    def get_queryset(self):
+        return UserProfile.objects.filter(id=self.request.user.id)
+
 
 
 class DoctorDetailAPIView(generics.RetrieveUpdateDestroyAPIView):

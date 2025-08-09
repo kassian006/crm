@@ -222,9 +222,29 @@ class DoctorCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Doctor
+        fields = ['id', 'first_name', 'last_name', 'image', 'department', 'speciality', 'phone_number', 'email', 'password', 'bonus', 'cabinet']
+
+    def create(self, validated_data):
+        validated_data['role'] = 'doctor'
+        return Doctor.objects.create(**validated_data)
+
+
+class DoctorDoctorSerializer(serializers.ModelSerializer):
+    department = serializers.SlugRelatedField(
+        queryset=Department.objects.all(),
+        slug_field='department_name'
+    )
+    speciality = serializers.SlugRelatedField(
+        queryset=Speciality.objects.all(),
+        slug_field='speciality_title'
+    )
+
+    class Meta:
+        model = Doctor
         fields = ['id', 'first_name', 'last_name', 'image', 'department', 'speciality', 'phone_number', 'email', 'bonus', 'cabinet']
 
     def create(self, validated_data):
+        validated_data['role'] = 'doctor'
         return Doctor.objects.create(**validated_data)
 
 
